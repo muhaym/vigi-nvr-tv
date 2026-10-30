@@ -30,7 +30,7 @@ This percentage does **not** cover Android Views, the platform Keystore, LibVLC 
 
 Android release / debug builds and lint are separate checks. Existing lint warnings include English-only UI, deprecated fullscreen APIs, programmatic-view accessibility and intentional persistent-write / trust-manager review points. Errors are not suppressed with a blanket baseline.
 
-The alpha line has owner-confirmed physical two-way audio, optical directions, siren and light; see the compatibility matrix. Beta fresh onboarding found duplicate setup dialogs on keyboard return and a cleanup path that could leave playback preparing. The beta2 source fixes those paths and removes full-width black camera-label strips. Physical confirmation of those final UI fixes is pending until the owner completes the TV check.
+The alpha line has owner-confirmed physical two-way audio, optical directions, siren and light; see the compatibility matrix. Beta fresh onboarding found duplicate setup dialogs on keyboard return and a cleanup path that could leave playback preparing. Beta2 fixes those paths and removes full-width black camera-label strips. The owner then reported black lower tiles in a four-camera grid; TV logs confirmed HEVC hardware decoder NO_MEMORY allocation failures. Beta4 switches low-resolution individual grids to software decoding while preserving hardware decoding for full-screen and combined streams. Physical confirmation of this final decoder change is pending.
 
 ## Before claiming a new compatible model
 

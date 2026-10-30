@@ -15,7 +15,6 @@ class TrayDialog extends Dialog {
     super(activity);
     owner = activity;
     requestWindowFeature(Window.FEATURE_NO_TITLE);
-    getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
     getWindow().clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
     getWindow().setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));
     content = new ControlTray(owner);

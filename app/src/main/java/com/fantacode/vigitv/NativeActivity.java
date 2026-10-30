@@ -98,7 +98,7 @@ public final class NativeActivity extends Activity {
   @Override
   public void onCreate(Bundle saved) {
     super.onCreate(saved);
-    getWindow().addFlags(128 | WindowManager.LayoutParams.FLAG_SECURE);
+    getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     getWindow().getDecorView().setSystemUiVisibility(5894);
     prefs = getSharedPreferences("native", 0);
     profile = ProfileStore.read(this);
@@ -280,7 +280,6 @@ public final class NativeActivity extends Activity {
           if (streamCheckDialog == dialog) streamCheckDialog = null;
         });
     dialog.show();
-    dialog.getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
     final String checkHost = host, checkUser = user, checkPassword = password;
     new Thread(
             () -> {
@@ -1749,7 +1748,10 @@ public final class NativeActivity extends Activity {
                     startTime,
                     Math.min(System.currentTimeMillis(), startTime + 1800000L));
         Media media = new Media(engine, Uri.parse(stream));
-        media.setHWDecoderEnabled(true, false);
+        // TV hardware may expose only two HEVC decoder instances. Low-resolution grids
+        // use independent software decoders; main/full-screen keeps hardware acceleration.
+        media.setHWDecoderEnabled(main, false);
+        if (!main) media.addOption(":avcodec-hw=none");
         media.addOption(":rtsp-tcp");
         media.addOption(":rtsp-frame-buffer-size=4194304");
         media.addOption(":no-drop-late-frames");

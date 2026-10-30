@@ -45,7 +45,6 @@ final class TalkDialog extends Dialog implements TalkController.Listener {
     mode = owner.getSharedPreferences("native", 0).getInt("talk_mode", 1);
     if (mode < 0 || mode > 2) mode = 1;
     controller = new TalkController(owner, authorization, this);
-    getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
     getWindow().clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
     getWindow().setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));
     ControlTray content = new ControlTray(owner);

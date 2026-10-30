@@ -54,7 +54,6 @@ final class AlarmDialog extends TrayDialog implements AlarmController.Listener {
             .setNegativeButton("Cancel", null)
             .setPositiveButton("Start alarm", (d, w) -> controller.start())
             .create();
-    confirmation.getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);
     confirmation.show();
     confirmation.getButton(AlertDialog.BUTTON_NEGATIVE).requestFocus();
   }

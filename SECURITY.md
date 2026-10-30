@@ -22,6 +22,10 @@ Opening Alarm only reads the selected camera's capabilities. An explicit, confir
 
 The ten-second timer runs in the app, not as a proven firmware-enforced timeout. Network failure, process termination or TV power loss can prevent delivery of Stop. A pending-stop flag is saved before sending Start and survives restart. Unconfirmed stops block further app alarm starts and surface a warning; open the affected camera's Alarm panel and choose Stop, or stop it through the recorder. Reopening a panel never automatically starts or stops another operator's alarm.
 
+## Screenshots
+
+Camera views and control panels allow screenshots and screen sharing. The private-pattern and recorder-credential screens retain Android screenshot blocking. Treat any camera screenshots as private footage; never commit them or include them in public issues.
+
 ## Reporting
 
 Do not post credentials, camera images, office layouts, certificates identifying private sites, private keys, or unredacted logs in public issues. Report vulnerabilities privately using [GitHub security advisories](https://github.com/muhaym/vigi-nvr-tv/security/advisories/new). Do not disclose exploitable details or private recorder information in public issues.

@@ -31,7 +31,7 @@ The recorder must expose the requested camera as a channel. Compatible VIGI, Tap
 | Siren / light | Recorder reports the camera's corresponding manual outputs |
 | 8 / 16-camera layouts | Enabled recorder Channel-Zero preview and explicit app mapping |
 
-Four individual streams are a resource ceiling, not a guarantee of four hardware decoders on every TV. Large recorders are paged; the app does not decode 96 camera streams simultaneously. Combined preview currently accepts up to an 8 × 8 source mapping, and requires a mapped cell for every configured camera. Larger installations can use individual-stream pages; larger composite mappings need separate support.
+Four individual grid streams use software decoding; performance depends on the TV CPU and camera substream resolution. Full-screen and combined video keep hardware decoding. Large recorders are paged; the app does not decode 96 camera streams simultaneously. Combined preview currently accepts up to an 8 × 8 source mapping, and requires a mapped cell for every configured camera. Larger installations can use individual-stream pages; larger composite mappings need separate support.
 
 ## Documented limitations and sources
 

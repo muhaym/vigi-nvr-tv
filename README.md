@@ -20,7 +20,7 @@ Watch grouped cameras, browse recordings and use supported camera controls from 
 - Protect viewing with a private remote pattern; save the recorder account with Android Keystore encryption.
 - Discover camera names through the NVR, or manually configure channels **1–96**. Configure non-default HTTPS, RTSP and native-talk ports.
 
-One active recorder is supported. Every camera connection goes **through that recorder**, including talk and controls. Four individual streams are the current resource ceiling; 8 / 16 layouts require a separately configured Channel-Zero combined preview. Its image is shared across tiles, so detail is lower.
+One active recorder is supported. Every camera connection goes **through that recorder**, including talk and controls. Four individual streams use software decoding to avoid scarce TV hardware decoder slots; 8 / 16 layouts require a separately configured Channel-Zero combined preview. Its image is shared across tiles, so detail is lower.
 
 ## Get started
 

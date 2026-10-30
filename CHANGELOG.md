@@ -1,6 +1,6 @@
 # Changes
 
-## 0.9.0-beta2 — public-source preparation
+## 0.9.0-beta4 — public-source preparation
 
 - Name the independent project VIGI NVR TV and document supported / untested configurations.
 - Separate Android application code from the plain-Java recorder / domain core.
@@ -9,6 +9,8 @@
 - Bound camera discovery work and reject conflicting channel identities.
 - Remove private installation migration hooks; new installs always use explicit setup.
 - Add compatibility, testing, architecture and release documentation, enforced core coverage minimums and public issue templates.
+- Allow screenshots / sharing of camera and control screens; keep private pattern and credential entry protected.
+- Use software decoding for low-resolution multi-camera grids to avoid limited TV hardware decoder instances; preserve hardware decoding for full-screen and combined streams.
 - Keep recorder setup single-instance across keyboard return, dismiss setup before rendering, complete player cleanup barriers after errors, and remove full-width black camera-label backgrounds.
 
 ## 0.9 alpha line
