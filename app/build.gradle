@@ -1,0 +1,22 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'com.fantacode.vigitv'
+    compileSdk 36
+    defaultConfig {
+        applicationId 'com.fantacode.vigitv'
+        minSdk 26
+        targetSdk 35
+        versionCode 23
+        versionName '0.9.0-beta2'
+        ndk { abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86_64' }
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 }
+    buildTypes { release { minifyEnabled false } }
+    packaging { jniLibs { useLegacyPackaging = true } }
+    testOptions { unitTests.returnDefaultValues = false }
+}
+dependencies {
+    implementation 'org.videolan.android:libvlc-all:3.7.7'
+    implementation project(':core')
+}

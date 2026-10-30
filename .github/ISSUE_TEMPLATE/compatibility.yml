@@ -1,0 +1,23 @@
+name: Compatibility report
+description: Report a tested recorder / firmware / TV combination.
+title: "[Compatibility] Model and firmware"
+body:
+  - type: textarea
+    id: hardware
+    attributes:
+      label: Hardware and software
+      description: NVR model, hardware revision, firmware, TV / Android version and app version. No serials, IPs or account details.
+    validations:
+      required: true
+  - type: textarea
+    id: results
+    attributes:
+      label: Observed feature results
+      description: List live, playback, listen, talk, conversation, digital / optical zoom, siren and light separately. Mark untested features as untested.
+    validations:
+      required: true
+  - type: textarea
+    id: role
+    attributes:
+      label: Conditions
+      description: Account role / permissions, default or changed service ports, USB audio model, composite preview configuration. Do not include credentials or footage.

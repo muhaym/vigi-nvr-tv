@@ -1,0 +1,20 @@
+name: Bug report
+description: Report a reproducible app problem.
+body:
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction and expected behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: App, Android TV, recorder model and firmware
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitised evidence
+      description: Never submit credentials, camera images, addresses or unredacted logs. Report vulnerabilities through Security advisories instead.

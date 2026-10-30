@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Private security report
+    url: https://github.com/muhaym/vigi-nvr-tv/security/advisories/new
+    about: Report security issues privately; never post credentials or footage.
