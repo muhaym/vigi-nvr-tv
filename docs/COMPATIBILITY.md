@@ -5,7 +5,7 @@
 | Component | Evidence |
 | --- | --- |
 | VIGI NVR4032H(UN) v1.0, firmware 1.7.0 Build 260716 Rel.7097n | Live, groups, playback / scrubbing, USB talk, two-way conversation, manual siren and light confirmed by the owner |
-| Haier MatrixTV BE, Android 14, 32-bit ARM | Existing installation and remote navigation tested; beta fresh-install onboarding is tracked separately in release validation |
+| Haier MatrixTV BE, Android 14, 32-bit ARM | Existing installation and remote navigation tested; beta5 physical four-camera rendering confirmed after a targeted MStar composition workaround. Fresh-install / upgrade evidence is tracked separately in release validation |
 | Jabra SPEAK 510 over USB | Speech recording and camera-speaker output tested |
 | Fixed and optical-lens cameras behind the recorder | Digital zoom and optical control directions confirmed; no motor pan / tilt claim |
 
@@ -43,3 +43,7 @@ TP-Link documents that SRTP-enabled streams cannot be consumed by third-party cl
 - [TP-Link VIGI product guide, including 64 / 96-channel families](https://static.tp-link.com/upload/smb/2024/202401/20240124/2024%20VIGI%20Product%20Guide_English.pdf)
 
 To report a new compatible device, use the repository's compatibility report template with model, hardware revision, firmware, TV / Android version, role and separately observed feature results. Never include credentials, camera IPs, images or unredacted logs.
+
+### MStar physical-display workaround
+
+On the tested Haier `m7632` graphics platform, camera frames appeared in Android screenshots while the physical panel displayed black until another window appeared. Beta5 keeps camera textures blended in an off-screen app graphics layer on `m7632` hardware. The owner confirmed the physical panel after paging, full-screen return and five-second cycling on 31 October 2026. Other TVs on this platform remain untested. The workaround does not change global TV developer settings.

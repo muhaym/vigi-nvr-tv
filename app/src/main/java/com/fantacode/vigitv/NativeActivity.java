@@ -63,6 +63,7 @@ public final class NativeActivity extends Activity {
   boolean wallMode = false, returnFocusToTimeline = false;
   long lastInteraction = 0;
   int pendingPlayerStops = 0;
+  final boolean compatibilityDrawing = "m7632".equalsIgnoreCase(android.os.Build.HARDWARE);
   final AutoCycle autoCycle = new AutoCycle();
   int cycleMode = 1;
   TextView cycleControl;
@@ -324,6 +325,9 @@ public final class NativeActivity extends Activity {
     if (root == null) {
       root = new FrameLayout(this);
       root.setBackgroundColor(BG);
+      // Some MStar compositors display black video until a dialog changes layer blending.
+      // Keep video inside an off-screen HWUI layer on the affected platform.
+      if (compatibilityDrawing) root.setLayerType(View.LAYER_TYPE_HARDWARE, null);
       wallStage = new FrameLayout(this);
       root.addView(wallStage, new FrameLayout.LayoutParams(-1, -1));
       chromeTop = row();
@@ -1635,7 +1639,8 @@ public final class NativeActivity extends Activity {
       tile.addView(video, new LinearLayout.LayoutParams(-1, 0, 1));
       video.setClipChildren(true);
       surface = new TextureView(NativeActivity.this);
-      surface.setOpaque(true);
+      surface.setOpaque(!compatibilityDrawing);
+      if (compatibilityDrawing) surface.setAlpha(0.99f);
       video.addView(surface, new FrameLayout.LayoutParams(-1, -1, Gravity.CENTER));
       status = text("Waiting for connection", main ? 15 : 11, 0xffbbbbbb);
       status.setGravity(Gravity.CENTER);

@@ -25,3 +25,7 @@
 The owner confirmed two-way audio, optical control directions, and both manual siren and light in the alpha line. The alpha3 layout / cycle iteration was exercised on the TV, and the owner reported alpha4 working after the five-second / alarm update. These confirmations are not a universal hardware certification. The owner uninstalled the app to verify fresh onboarding for the public-source iteration.
 
 Current build, coverage, CI and fresh-install results are recorded in [testing](TESTING.md) as they are completed. No claim of a tested public APK release is made by this source checklist.
+
+## Beta5 physical rendering validation — 31 October 2026
+
+The owner confirmed moving four-camera pictures with menus closed on the Haier MStar `m7632` TV after the app-only composition workaround. Full-screen return, page changes and five-second page cycling remained normal on the physical panel. This resolves the observed fresh-install individual-stream display regression for that tested TV. It is not certification of all Android TV hardware or VIGI recorder firmware.

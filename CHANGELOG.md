@@ -1,5 +1,10 @@
 # Changes
 
+## 0.9.0-beta5
+
+- Fix physical-TV black camera pictures on the tested MStar `m7632` platform with app-scoped composition / texture blending. Android screenshots alone did not expose this panel failure.
+- Owner confirmed four-camera viewing with menus closed, full-screen return, page changes and five-second page cycling on 31 October 2026. No global TV graphics settings are changed.
+
 ## 0.9.0-beta4 — public-source preparation
 
 - Name the independent project VIGI NVR TV and document supported / untested configurations.

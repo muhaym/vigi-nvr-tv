@@ -44,6 +44,7 @@ flowchart LR
 - `ManualAlarmRun` / `AlarmController` / `AlarmSafety`: captured target, one start attempt, ten-second deadline, cancellation / stop retries and persistent unconfirmed-stop state. A stopped process cannot guarantee delivery of Stop; that limitation is surfaced in the UI and security documentation.
 - `ControlTray` / `TrayDialog` and control panels share spacing and focus styles. Default alarm focus is Close; Start requires confirmation for the named camera. Stop recovery remains available for an unresolved app alarm even if a capability refresh fails.
 - `ViewLayout` / `AutoCycle` are pure policies. Android eligibility guards suspend cycling while unlocked foreground viewing is interrupted, while user interaction rearms the interval.
+- The Android viewing Activity enables an off-screen HWUI / texture-blending compatibility path on the tested `m7632` platform. This isolates the observed TV compositor quirk without changing recorder protocols or system-wide graphics settings. Screenshot output and physical panel output are separate validation requirements.
 - `MosaicWall` decodes a configured recorder composite once and crops tiles using explicit mapping. It does not create a hidden decoder per tile.
 
 ## Extending compatibility
