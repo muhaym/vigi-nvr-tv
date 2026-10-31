@@ -327,7 +327,7 @@ public final class NativeActivity extends Activity {
       root.setBackgroundColor(BG);
       // Some MStar compositors display black video until a dialog changes layer blending.
       // Keep video inside an off-screen HWUI layer on the affected platform.
-      if (compatibilityDrawing) root.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+
       wallStage = new FrameLayout(this);
       root.addView(wallStage, new FrameLayout.LayoutParams(-1, -1));
       chromeTop = row();
@@ -370,6 +370,12 @@ public final class NativeActivity extends Activity {
       wallStage.addView(wall, new FrameLayout.LayoutParams(-1, -1));
       wall.mapping(profile.cells(), profile.columns, profile.rows);
     }
+    if (compatibilityDrawing)
+      root.setLayerType(
+          !detail && profile.combined && pageSize > 4
+              ? View.LAYER_TYPE_NONE
+              : View.LAYER_TYPE_HARDWARE,
+          null);
     scrubbing = false;
     scrubber = null;
     pauseControl = null;
@@ -496,7 +502,7 @@ public final class NativeActivity extends Activity {
               render();
             });
       }
-      if (profile.combined && pageSize > 1) {
+      if (profile.combined && pageSize > 4) {
         wall.account(host, user, password);
         wall.setVisibility(View.VISIBLE);
         wall.cameras(new ArrayList<>(ids.subList(from, to)), pageSize);
@@ -517,6 +523,8 @@ public final class NativeActivity extends Activity {
       }
     }
     setWallMode(wallMode);
+    if (replayStart == 0 && (detail || pageSize == 1) && !feeds.isEmpty())
+      feeds.get(0).view.requestFocus();
     autoCycle.defer(SystemClock.uptimeMillis());
   }
 
@@ -753,6 +761,31 @@ public final class NativeActivity extends Activity {
       if (zoomOverlay.navigate(event)) return true;
       return super.dispatchKeyEvent(event);
     }
+    boolean videoFocused = !feeds.isEmpty() && getCurrentFocus() == feeds.get(0).view;
+    if (videoFocused
+        && (detail || pageSize == 1)
+        && getWindow().getDecorView().hasWindowFocus()
+        && (key == KeyEvent.KEYCODE_DPAD_UP || key == KeyEvent.KEYCODE_DPAD_DOWN)) {
+      if (event.getAction() == KeyEvent.ACTION_DOWN) {
+        setWallMode(false);
+        if (detail)
+          (key == KeyEvent.KEYCODE_DPAD_UP ? chromeTop.getChildAt(0) : chromeBar.getChildAt(0))
+              .requestFocus();
+        else chromeTop.getChildAt(1).requestFocus();
+      }
+      return true;
+    }
+    if (replayStart == 0
+        && (detail || pageSize == 1)
+        && (wallMode || videoFocused)
+        && getWindow().getDecorView().hasWindowFocus()
+        && (talkDialog == null || !talkDialog.isShowing())
+        && (alarmDialog == null || !alarmDialog.isShowing())
+        && (key == KeyEvent.KEYCODE_DPAD_LEFT || key == KeyEvent.KEYCODE_DPAD_RIGHT)) {
+      if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0)
+        switchCamera(key == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : -1);
+      return true;
+    }
     if (key == KeyEvent.KEYCODE_MENU) {
       if (event.getAction() == KeyEvent.ACTION_UP) {
         setWallMode(!wallMode);
@@ -778,6 +811,18 @@ public final class NativeActivity extends Activity {
       }
     }
     return super.dispatchKeyEvent(event);
+  }
+
+  void switchCamera(int direction) {
+    ArrayList<Integer> ids = groups.get(groupIndex).ids;
+    int current = detail ? channel : ids.isEmpty() ? 0 : ids.get(Math.min(page, ids.size() - 1));
+    int next = CameraNavigation.adjacent(ids, current, direction);
+    if (next == 0 || next == current) return;
+    if (detail) {
+      channel = next;
+      page = ids.indexOf(next) / pageSize;
+    } else page = ids.indexOf(next);
+    render();
   }
 
   void start() {
@@ -808,18 +853,6 @@ public final class NativeActivity extends Activity {
     String[] labels = {
       "1 camera · full quality", "4 cameras · 2 × 2", "8 cameras · 4 × 2", "16 cameras · 4 × 4"
     };
-    ArrayAdapter<String> adapter =
-        new ArrayAdapter<String>(this, android.R.layout.select_dialog_singlechoice, labels) {
-          @Override
-          public boolean areAllItemsEnabled() {
-            return profile.combined;
-          }
-
-          @Override
-          public boolean isEnabled(int position) {
-            return profile.combined || position < 2;
-          }
-        };
     int selected = 0;
     for (int i = 0; i < ViewLayout.SIZES.length; i++)
       if (pageSize == ViewLayout.SIZES[i]) selected = i;
@@ -827,37 +860,28 @@ public final class NativeActivity extends Activity {
         new AlertDialog.Builder(this)
             .setTitle("Live camera layout")
             .setSingleChoiceItems(
-                adapter,
+                labels,
                 selected,
                 (d, which) -> {
-                  pageSize = ViewLayout.SIZES[which];
-                  page = 0;
-                  detail = false;
-                  replayStart = 0;
-                  wallMode = false;
-                  cycleMode = pageSize == 1 ? 1 : 2;
-                  prefs
-                      .edit()
-                      .putInt("layout", pageSize)
-                      .putInt("auto_cycle_mode", cycleMode)
-                      .apply();
+                  int size = ViewLayout.SIZES[which];
                   d.dismiss();
-                  render();
+                  if (size > 4 && !profile.combined) overviewSettings(size);
+                  else selectLayout(size);
                 })
             .setNegativeButton("Cancel", null)
             .create();
-    if (!profile.combined) {
-      TextView note =
-          text(
-              "8 and 16 cameras use the recorder's combined preview. Configure it in Overview"
-                  + " settings.",
-              13,
-              MUTED);
-      note.setSingleLine(false);
-      note.setPadding(dp(24), dp(12), dp(24), dp(12));
-      dialog.setCustomTitle(note);
-    }
     dialog.show();
+  }
+
+  void selectLayout(int size) {
+    pageSize = size;
+    page = 0;
+    detail = false;
+    replayStart = 0;
+    wallMode = false;
+    cycleMode = size == 1 ? 1 : 2;
+    prefs.edit().putInt("layout", size).putInt("auto_cycle_mode", cycleMode).apply();
+    render();
   }
 
   int pageCount() {
@@ -1106,20 +1130,32 @@ public final class NativeActivity extends Activity {
   }
 
   void overviewSettings() {
+    overviewSettings(0);
+  }
+
+  void overviewSettings(int requestedSize) {
     OverviewSettings.show(
         this,
         profile,
+        requestedSize > 4,
         updated -> {
           try {
             ProfileStore.save(this, updated);
           } catch (Exception error) {
             toast("Could not save overview settings");
-            return;
+            return false;
           }
           profile = updated;
           wall.mapping(profile.cells(), profile.columns, profile.rows);
-          if (!profile.combined) pageSize = Math.min(4, pageSize);
-          render();
+          ui.post(
+              () -> {
+                if (requestedSize > 0) selectLayout(requestedSize);
+                else {
+                  if (!profile.combined) pageSize = Math.min(4, pageSize);
+                  render();
+                }
+              });
+          return true;
         });
   }
 
@@ -1549,7 +1585,7 @@ public final class NativeActivity extends Activity {
           () -> {
             if (resumed && AppLock.allowed(this)) account();
           });
-    if (!detail && wall != null && profile.combined && pageSize > 1) wall.resumeWall();
+    if (!detail && wall != null && profile.combined && pageSize > 4) wall.resumeWall();
     start();
   }
 

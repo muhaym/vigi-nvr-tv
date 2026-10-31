@@ -19,7 +19,7 @@ flowchart LR
 
 ## Models and connection configuration
 
-`RecorderProfile` stores one recorder's host, accepted certificate, service ports, channel labels and explicit combined-grid mapping. It accepts channel identities 1–96, including sparse tables. `RecorderPorts` validates service ports. `RecorderStreams` builds credential-escaped live / replay / combined URLs and formats replay times in UTC. `CameraGroup` serialises ordered groups and prunes removed cameras atomically.
+`RecorderProfile` stores one recorder's host, accepted certificate, service ports, channel labels and explicit combined-grid mapping. It accepts channel identities 1–96, including sparse tables. `RecorderPorts` validates service ports. `RecorderStreams` builds credential-escaped live / replay / combined URLs and formats replay times in UTC. `CameraGroup` serialises ordered groups and prunes removed cameras atomically. `CameraNavigation` wraps manual camera changes within that order. `CompositeDraft` keeps named-cell edits, moves and resizing separate from saved data. `CompositeMapping` validates a complete, explicit source grid without modifying the original profile on failure.
 
 `RecorderSetup` inspects identity before credentials, asks for explicit fingerprint trust, then makes one advertised RSA/SHA256 login attempt and reads the camera table. `CameraDiscovery` only retains channel IDs and labels, with depth / work bounds and rejection of conflicting IDs. Unknown discovery shapes require manual configuration; there is no guessed channel offset. `RecorderServices` consistently resolves configured ports and the accepted certificate for controls and talk. No feature connects directly to a camera.
 
@@ -49,4 +49,6 @@ flowchart LR
 
 ## Extending compatibility
 
-Add a sanitised fixture and tests before accepting a new response variant or protocol. Keep channel conversion in the corresponding transport; do not spread firmware offsets through UI code. Never guess authentication or silently weaken TLS. A camera without a speaker / motor / alarm is not expected to offer that action. Unknown hardware must be recorded as untested rather than declared compatible.
+Add a sanitised fixture and tests before accepting a new response variant or protocol. Keep channel conversion in the corresponding transport; do not spread firmware offsets through UI code. Never guess authentication or silently weaken TLS. Eight / sixteen-camera selection opens explicit combined-preview setup rather than disabling menu rows. The one / four-camera layouts retain individual streams. Live Left / Right is intercepted only on the single-video surface; playback, focused controls, dialogs and zoom retain their own key behaviour.
+
+A camera without a speaker / motor / alarm is not expected to offer that action. Unknown hardware must be recorded as untested rather than declared compatible.

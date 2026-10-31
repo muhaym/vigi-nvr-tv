@@ -1,5 +1,18 @@
 # Changes
 
+## 0.9.0-beta7
+
+- Replace raw combined-preview channel IDs with a visual grid of camera names and Empty tiles.
+- Move existing assignments instead of duplicating them, show unplaced cameras, and require complete mapping before Save. Cancel discards the draft.
+- Add core tests for mapping drafts, resizing and assignment moves.
+
+## 0.9.0-beta6
+
+- Make 8 / 16 layout rows selectable, guiding unconfigured installations through explicit combined-preview mapping before enabling the chosen layout.
+- Keep clearer individual streams for 1 / 4 views; use the existing combined-preview renderer for 8 / 16.
+- Add live single-camera Left / Right navigation within the selected group, with wraparound. Keep playback and focused controls separate; Up / Down still reaches controls.
+- Validate composite mappings and ordered camera navigation with additional core tests.
+
 ## 0.9.0-beta5
 
 - Fix physical-TV black camera pictures on the tested MStar `m7632` platform with app-scoped composition / texture blending. Android screenshots alone did not expose this panel failure.

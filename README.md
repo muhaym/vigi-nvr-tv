@@ -13,7 +13,7 @@ Watch grouped cameras, browse recordings and use supported camera controls from 
 
 - Organise cameras into your own groups, with fixed **1 / 4 / 8 / 16** layouts.
 - Rotate individual cameras or pages every **5 / 15 / 30 / 60 seconds**, silently. Remote activity postpones cycling; opening a camera pauses it.
-- Open full-resolution live video and recorded playback with a remote-controlled timeline.
+- Open full-resolution live video and recorded playback with a remote-controlled timeline. In live single-camera view, Left / Right switches through the selected group; Up / Down reaches the controls.
 - Talk using a **USB microphone**: conversation mode or hold / tap push-to-talk, where supported by the NVR and camera.
 - Digital zoom and movement around the picture; optical lens zoom where the recorder reports support.
 - Start / stop a camera's supported siren and light through a confirmed manual alarm action.
@@ -31,7 +31,7 @@ Use an Android TV / Google TV device running Android 8.0 (API 26) or newer, on t
 3. Compare the recorder certificate fingerprint with a trusted administrator before choosing **Trust and connect**. The identity inspection sends no credentials.
 4. Camera discovery populates the list. If that firmware's discovery response is unsupported, enter a manual camera count. **Advanced connection options** exposes port overrides; keep defaults unless the recorder's services were changed.
 5. Create groups from **Workspace → Arrange camera groups**. Select a layout and optional cycle interval. Press OK on a camera for playback, sound, talk, zoom and alarms.
-6. To use larger grids, enable combined preview on the recorder separately and configure its exact camera grid / order under **Overview settings**. The app never changes recorder settings automatically.
+6. Selecting 8 or 16 opens **Overview settings** when combined preview has not been configured. Enable it on the recorder separately, then match its grid in **Arrange overview** by choosing camera names for each tile. Unused tiles are labelled **Empty**; changes remain a draft until Save. The selected layout opens after a valid mapping is saved. The app never changes recorder settings automatically.
 
 The remote's voice-search microphone is generally unavailable to ordinary apps; use a working USB microphone for talk. Video currently uses unencrypted RTSP over TCP. Keep the recorder on a trusted LAN or VPN. See [security and privacy](SECURITY.md).
 
