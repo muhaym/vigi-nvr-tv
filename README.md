@@ -20,6 +20,8 @@ Watch grouped cameras, browse recordings and use supported camera controls from 
 - Protect viewing with a private remote pattern; save the recorder account with Android Keystore encryption.
 - Discover camera names through the NVR, or manually configure channels **1–96**. Configure non-default HTTPS, RTSP and native-talk ports.
 
+TP-Link ID sign-in, bound-device cloud discovery and cloud relay streaming are **not implemented**; cloud-bound recorders can still connect over LAN / VPN. See [cloud access status](docs/CLOUD-ACCESS.md).
+
 One active recorder is supported. Every camera connection goes **through that recorder**, including talk and controls. Four individual streams use software decoding to avoid scarce TV hardware decoder slots; 8 / 16 layouts require a separately configured Channel-Zero combined preview. Its image is shared across tiles, so detail is lower.
 
 ## Get started
@@ -27,9 +29,9 @@ One active recorder is supported. Every camera connection goes **through that re
 Use an Android TV / Google TV device running Android 8.0 (API 26) or newer, on the same reachable LAN or VPN as the recorder.
 
 1. Build and install your own APK using the steps below. This initial public repository is a **source release**; a public APK release awaits the native-library distribution checklist.
-2. Choose a private remote pattern, then enter the recorder address, username and password.
-3. Compare the recorder certificate fingerprint with a trusted administrator before choosing **Trust and connect**. The identity inspection sends no credentials.
-4. Camera discovery populates the list. If that firmware's discovery response is unsupported, enter a manual camera count. **Advanced connection options** exposes port overrides; keep defaults unless the recorder's services were changed.
+2. Choose a private remote pattern. Setup then asks for the recorder address; an IP, hostname or HTTPS browser address is accepted.
+3. Compare the recorder certificate fingerprint with a trusted administrator before choosing **Trust recorder**. Only then does the sign-in screen ask for the recorder username and password. Use the recorder account, not a TP-Link ID.
+4. Choose **Connect** to discover cameras automatically. **Advanced options** on the address step contains an optional recorder name, manual camera-count fallback and port overrides. Back from sign-in clears the password and returns to the address step.
 5. Create groups from **Workspace → Arrange camera groups**. Select a layout and optional cycle interval. Press OK on a camera for playback, sound, talk, zoom and alarms.
 6. Selecting 8 or 16 opens **Overview settings** when combined preview has not been configured. Enable it on the recorder separately, then match its grid in **Arrange overview** by choosing camera names for each tile. Unused tiles are labelled **Empty**; changes remain a draft until Save. The selected layout opens after a valid mapping is saved. The app never changes recorder settings automatically.
 

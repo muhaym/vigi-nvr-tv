@@ -9,7 +9,7 @@ python3 tools/check_source.py
 
 The core is a plain-Java module. Its tests run on the JVM, without production credentials, camera connections or a USB microphone. Local TLS fixtures bind loopback, create disposable test certificates and delete them afterwards. They never contact a real recorder.
 
-The validation run on 31 October 2026 passed **52 JUnit test entries**, including suites with multiple protocol / failure cases. JaCoCo measured **91.1% line coverage and 75.6% branch coverage across the entire core module**, without class exclusions. CI fails below **85% lines or 70% branches**. Reports are in `core/build/reports/jacoco/test/` and uploaded by CI.
+The validation run on 31 October 2026 passed **56 JUnit test entries**, including suites with multiple protocol / failure cases. JaCoCo measured **91.3% line coverage and 76.2% branch coverage across the entire core module**, without class exclusions. CI fails below **85% lines or 70% branches**. Reports are in `core/build/reports/jacoco/test/` and uploaded by CI.
 
 This percentage does **not** cover Android Views, the platform Keystore, LibVLC native code, USB hardware or actual camera outputs. Do not present it as whole-app or hardware coverage.
 
@@ -38,4 +38,6 @@ The alpha line has owner-confirmed physical two-way audio, optical directions, s
 
 Record hardware revision, firmware, TV version and account role. Test live / recordings / listen / talk / optical zoom / siren / light separately. A successful handshake is not proof of audible speech or a physical output. Use unoccupied test areas and explicit starts for physical controls. Follow the public-binary checklist before distributing an APK.
 
-Beta7 device UI checks verified the named-camera grid fits the TV, moving a draft assignment reports the missing camera and disables Save, and Cancel preserves the saved mapping. Eight / sixteen layouts and live Left / Right switching were exercised through the TV UI; physical panel confirmation for the larger layouts is tracked separately. No microphone, alarm or lens activation was part of these checks.
+Beta7 device UI checks verified the named-camera grid fits the TV, moving a draft assignment reports the missing camera and disables Save, and Cancel preserves the saved mapping. Eight / sixteen layouts and live Left / Right switching were exercised through the TV UI; the owner separately confirmed all 11 pictures visible and moving on the physical panel in Layout 16 with menus closed. No microphone, alarm or lens activation was part of these checks.
+
+Beta8 onboarding was checked on the TV using an isolated dummy-data preview with no network or microphone permissions. Address / sign-in visibility, hidden default advanced options, and clearing the password on Back passed local UI assertions. Both screen layouts were visually inspected. This does not establish a new end-to-end recorder authentication test or any cloud compatibility. Address parsing has JVM coverage for browser URLs, explicit ports and rejection of unsafe / ambiguous input.

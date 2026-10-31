@@ -64,7 +64,7 @@ public final class LockActivity extends Activity {
     copy.setGravity(Gravity.CENTER_VERTICAL);
     copy.setPadding(0, 0, dp(52), 0);
     root.addView(copy, new LinearLayout.LayoutParams(dp(340), dp(330)));
-    TextView brand = text("RECORDER TV  /  PRIVATE VIEWING", 11, MUTED);
+    TextView brand = text("VIGI NVR TV  /  PRIVATE VIEWING", 11, MUTED);
     brand.setLetterSpacing(.15f);
     copy.addView(brand, new LinearLayout.LayoutParams(-1, dp(36)));
     title = text("", 30, WHITE);
@@ -178,7 +178,7 @@ public final class LockActivity extends Activity {
                 ? "Enter your current pattern to change it."
                 : "Your cameras are private. Enter your pattern to continue.")
             : stage == 1
-                ? "Choose a pattern you can remember. It stays on this TV."
+                ? "First, protect this TV with a pattern. Next, connect your recorder."
                 : "Enter the same pattern again to save it.");
     submit.setText(stage == 0 ? "Unlock" : stage == 1 ? "Continue" : "Save pattern");
     board.clear();

@@ -1,5 +1,12 @@
 # Changes
 
+## 0.9.0-beta8
+
+- Split recorder onboarding into address / identity verification and sign-in, with ports and manual fallback under Advanced.
+- Accept a recorder HTTPS browser URL or host with a port; reject embedded credentials and unrelated page paths.
+- Add keyboard Continue / Connect actions and Back navigation that clears the entered password.
+- Document the current cloud-access boundary and prerequisites without presenting an unimplemented TP-Link account login.
+
 ## 0.9.0-beta7
 
 - Replace raw combined-preview channel IDs with a visual grid of camera names and Empty tiles.

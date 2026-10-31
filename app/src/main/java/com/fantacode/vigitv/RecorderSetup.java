@@ -19,8 +19,14 @@ final class RecorderSetup {
   final RecorderProfile previous;
   EditText host, label, user, password, count, https, rtsp, talk;
   TextView status;
+  TextView intro, advanced;
+  LinearLayout addressPage, loginPage, options;
   AlertDialog dialog, trustDialog;
   boolean busy;
+  X509Certificate accepted;
+  String checkedAddress;
+  RecorderPorts checkedPorts;
+  int checkedManual;
 
   RecorderSetup(Activity activity, RecorderProfile profile, String username, Result callback) {
     owner = activity;
@@ -29,35 +35,65 @@ final class RecorderSetup {
     LinearLayout form = new LinearLayout(owner);
     form.setOrientation(LinearLayout.VERTICAL);
     form.setPadding(dp(24), dp(8), dp(24), dp(16));
-    TextView intro = new TextView(owner);
-    intro.setText(
-        "Connect to your recorder on the local network. Camera connections stay behind the"
-            + " recorder.");
+    intro = new TextView(owner);
     intro.setTextColor(Color.LTGRAY);
     form.addView(intro);
-    label = field(form, "Recorder name", profile.label, false);
-    host = field(form, "Recorder IP or hostname", profile.host, false);
-    user = field(form, "Username", username, false);
-    password = field(form, "Password", "", true);
-    count = field(form, "Camera count (manual fallback, 1–96)", "", false);
-    count.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
-    TextView advanced = new TextView(owner);
-    advanced.setText("Advanced connection options");
+    intro.setPadding(0, 0, 0, dp(12));
+    addressPage = column(form);
+    host = field(addressPage, "Recorder IP or hostname", profile.host, false);
+    host.setInputType(
+        android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_URI);
+    host.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_NEXT);
+    host.setOnEditorActionListener(
+        (v, action, event) -> {
+          if (action == android.view.inputmethod.EditorInfo.IME_ACTION_NEXT) {
+            submit();
+            return true;
+          }
+          return false;
+        });
+    loginPage = column(form);
+    user = field(loginPage, "Recorder username", username, false);
+    password = field(loginPage, "Recorder password", "", true);
+    password.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_DONE);
+    password.setOnEditorActionListener(
+        (v, action, event) -> {
+          if (action == android.view.inputmethod.EditorInfo.IME_ACTION_DONE) {
+            submit();
+            return true;
+          }
+          return false;
+        });
+    advanced = new TextView(owner);
     advanced.setTextColor(Color.LTGRAY);
     advanced.setPadding(0, dp(12), 0, dp(12));
+    advanced.setMinHeight(dp(44));
     advanced.setFocusable(true);
+    advanced.setFocusableInTouchMode(true);
+    ControlTray.focus(advanced, false);
+    advanced.setOnFocusChangeListener((v, focused) -> ControlTray.focus(advanced, focused));
     form.addView(advanced);
+    options = column(form);
+    label = field(options, "Recorder name (optional)", profile.label, false);
+    count = field(options, "Camera count — only if discovery fails (1–96)", "", false);
+    count.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
     LinearLayout ports = new LinearLayout(owner);
-    form.addView(ports);
+    options.addView(ports);
     https = port(ports, "HTTPS", profile.ports.https);
     rtsp = port(ports, "Video RTSP", profile.ports.rtsp);
     talk = port(ports, "Native talk", profile.ports.talk);
-    ports.setVisibility(
+    options.setVisibility(
         profile.ports.https == 443 && profile.ports.rtsp == 554 && profile.ports.talk == 8443
             ? View.GONE
             : View.VISIBLE);
     advanced.setOnClickListener(
-        v -> ports.setVisibility(ports.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE));
+        v -> {
+          options.setVisibility(options.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
+          advanced.setText(
+              options.getVisibility() == View.VISIBLE
+                  ? "Hide advanced options"
+                  : "Advanced options");
+        });
     status = new TextView(owner);
     status.setTextColor(Color.LTGRAY);
     form.addView(status);
@@ -66,14 +102,94 @@ final class RecorderSetup {
     scroll.addView(form);
     dialog =
         new AlertDialog.Builder(owner)
-            .setTitle("Recorder setup")
+            .setTitle("Connect your recorder")
             .setView(scroll)
-            .setPositiveButton("Connect", null)
+            .setPositiveButton("Continue", null)
             .setNegativeButton("Cancel", null)
             .create();
     dialog.getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
-    dialog.setOnShowListener(d -> dialog.getButton(-1).setOnClickListener(v -> inspect()));
+    dialog.setOnShowListener(
+        d -> {
+          dialog.getButton(-1).setOnClickListener(v -> submit());
+          dialog
+              .getButton(-2)
+              .setOnClickListener(
+                  v -> {
+                    if (accepted == null) close();
+                    else showAddress();
+                  });
+          showAddress();
+        });
+    dialog.setOnDismissListener(
+        d -> {
+          password.setText("");
+          if (trustDialog != null) trustDialog.dismiss();
+        });
+    dialog.setOnKeyListener(
+        (d, key, event) -> {
+          if (key == KeyEvent.KEYCODE_BACK && accepted != null && !busy) {
+            if (event.getAction() == KeyEvent.ACTION_UP) showAddress();
+            return true;
+          }
+          return false;
+        });
     dialog.show();
+    dialog.getWindow().setLayout(dp(620), -2);
+  }
+
+  LinearLayout column(LinearLayout parent) {
+    LinearLayout view = new LinearLayout(owner);
+    view.setOrientation(LinearLayout.VERTICAL);
+    parent.addView(view);
+    return view;
+  }
+
+  void showAddress() {
+    accepted = null;
+    password.setText("");
+    addressPage.setVisibility(View.VISIBLE);
+    loginPage.setVisibility(View.GONE);
+    advanced.setVisibility(View.VISIBLE);
+    advanced.setText(
+        options.getVisibility() == View.VISIBLE ? "Hide advanced options" : "Advanced options");
+    intro.setText(
+        "1 of 2 · Find your recorder\nUse its address on the same network or through a VPN.");
+    dialog.getButton(-1).setText("Continue");
+    dialog.getButton(-2).setText("Cancel");
+    busy(false, "");
+    host.requestFocus();
+  }
+
+  void showLogin(String address, X509Certificate certificate, int manual, RecorderPorts ports) {
+    checkedAddress = address;
+    checkedManual = manual;
+    checkedPorts = ports;
+    accepted = certificate;
+    addressPage.setVisibility(View.GONE);
+    options.setVisibility(View.GONE);
+    advanced.setVisibility(View.GONE);
+    loginPage.setVisibility(View.VISIBLE);
+    intro.setText(
+        "2 of 2 · Sign in to "
+            + address
+            + "\nUse your recorder account, not your TP-Link ID. Cameras are found automatically.");
+    dialog.getButton(-1).setText("Connect");
+    dialog.getButton(-2).setText("Back");
+    busy(false, "Recorder identity verified");
+    (user.getText().toString().isEmpty() ? user : password).requestFocus();
+  }
+
+  void submit() {
+    if (busy) return;
+    ((android.view.inputmethod.InputMethodManager)
+            owner.getSystemService(Activity.INPUT_METHOD_SERVICE))
+        .hideSoftInputFromWindow(password.getWindowToken(), 0);
+    if (accepted == null) inspect();
+    else if (user.getText().toString().trim().isEmpty()
+        || password.getText().toString().isEmpty()) {
+      status.setText("Enter your recorder username and password");
+      (user.getText().toString().trim().isEmpty() ? user : password).requestFocus();
+    } else connect(checkedAddress, accepted, checkedManual, checkedPorts);
   }
 
   void close() {
@@ -89,8 +205,10 @@ final class RecorderSetup {
   EditText field(LinearLayout parent, String hint, String initial, boolean secret) {
     EditText view = new EditText(owner);
     view.setHint(hint);
+    view.setContentDescription(hint);
     view.setText(initial);
     view.setSingleLine();
+    view.setMinHeight(dp(48));
     view.setInputType(secret ? 129 : 1);
     parent.addView(view);
     return view;
@@ -124,6 +242,10 @@ final class RecorderSetup {
     busy = value;
     if (dialog.isShowing()) {
       dialog.getButton(-1).setEnabled(!value);
+      dialog.getButton(-2).setEnabled(!value);
+      for (EditText input : new EditText[] {host, label, user, password, count, https, rtsp, talk})
+        input.setEnabled(!value);
+      advanced.setEnabled(!value);
       status.setText(text);
     }
   }
@@ -134,10 +256,13 @@ final class RecorderSetup {
     final int manual;
     final RecorderPorts ports;
     try {
-      address = RecorderProfile.validHost(host.getText().toString());
+      RecorderAddress parsed =
+          RecorderAddress.parse(
+              host.getText().toString(), Integer.parseInt(https.getText().toString()));
+      address = parsed.host;
       ports =
           new RecorderPorts(
-              Integer.parseInt(https.getText().toString()),
+              parsed.https,
               Integer.parseInt(rtsp.getText().toString()),
               Integer.parseInt(talk.getText().toString()));
       String entered = count.getText().toString();
@@ -146,10 +271,6 @@ final class RecorderSetup {
         throw new IllegalArgumentException("Camera count must be 1–96");
     } catch (Exception bad) {
       status.setText(bad.getMessage());
-      return;
-    }
-    if (user.getText().toString().trim().isEmpty() || password.getText().toString().isEmpty()) {
-      status.setText("Enter your recorder username and password");
       return;
     }
     busy(true, "Checking recorder identity…");
@@ -163,7 +284,7 @@ final class RecorderSetup {
                     () -> {
                       if (!alive()) return;
                       if (address.equals(previous.host) && encoded.equals(previous.certificate)) {
-                        connect(address, certificate, manual, ports);
+                        showLogin(address, certificate, manual, ports);
                         return;
                       }
                       busy(false, "");
@@ -182,9 +303,9 @@ final class RecorderSetup {
                                       + " before continuing. Credentials are sent only after you"
                                       + " choose Trust.")
                               .setPositiveButton(
-                                  "Trust and connect",
+                                  "Trust recorder",
                                   (d, w) -> {
-                                    if (alive()) connect(address, certificate, manual, ports);
+                                    if (alive()) showLogin(address, certificate, manual, ports);
                                   })
                               .setNegativeButton("Cancel", null)
                               .create();
