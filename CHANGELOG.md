@@ -1,5 +1,10 @@
 # Changes
 
+## 0.9.0-beta10
+
+- Fix digital picture movement when a hardware decoder starts video without reporting fitted image dimensions. Use the displayed surface size until metadata is available.
+- Keep pan bounds valid as layout metadata arrives or the view resizes; add regression cases for all directions and returning to 1×.
+
 ## 0.9.0-beta9
 
 - Recover recorder identity and camera lists when an added camera has no combined-preview position, or a saved overview has duplicate / stale cells. Use individual feeds until the overview is reviewed.

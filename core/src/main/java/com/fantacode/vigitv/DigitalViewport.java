@@ -30,8 +30,10 @@ final class DigitalViewport {
   void size(float w, float h, float iw, float ih) {
     width = Math.max(0, w);
     height = Math.max(0, h);
-    imageWidth = Math.max(0, iw);
-    imageHeight = Math.max(0, ih);
+    // Hardware decoding can start without a video-layout callback. The displayed
+    // surface is still a usable frame; missing metadata must not clamp all pan to zero.
+    imageWidth = iw > 0 ? iw : width;
+    imageHeight = ih > 0 ? ih : height;
     clamp();
   }
 

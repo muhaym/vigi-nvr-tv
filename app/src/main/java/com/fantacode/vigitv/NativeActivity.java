@@ -655,7 +655,11 @@ public final class NativeActivity extends Activity {
     for (Feed feed : feeds)
       if (feed.main) {
         int width = feed.video.getWidth(), height = feed.video.getHeight();
-        viewport.size(width, height, feed.fittedWidth, feed.fittedHeight);
+        viewport.size(
+            width,
+            height,
+            feed.fittedWidth > 0 ? feed.fittedWidth : feed.surface.getWidth(),
+            feed.fittedHeight > 0 ? feed.fittedHeight : feed.surface.getHeight());
         feed.surface.setScaleX(viewport.scale());
         feed.surface.setScaleY(viewport.scale());
         feed.surface.setTranslationX(viewport.x);

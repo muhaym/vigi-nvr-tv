@@ -9,7 +9,7 @@ python3 tools/check_source.py
 
 The core is a plain-Java module. Its tests run on the JVM, without production credentials, camera connections or a USB microphone. Local TLS fixtures bind loopback, create disposable test certificates and delete them afterwards. They never contact a real recorder.
 
-The validation run on 5 November 2026 passed **62 JUnit test entries**, including suites with multiple protocol / failure cases. JaCoCo measured **91.6% line coverage and 76.7% branch coverage across the entire core module**, without class exclusions. CI fails below **85% lines or 70% branches**. Reports are in `core/build/reports/jacoco/test/` and uploaded by CI.
+The validation run on 5 November 2026 passed **64 JUnit test entries**, including suites with multiple protocol / failure cases. JaCoCo measured **91.6% line coverage and 76.8% branch coverage across the entire core module**, without class exclusions. CI fails below **85% lines or 70% branches**. Reports are in `core/build/reports/jacoco/test/` and uploaded by CI.
 
 This percentage does **not** cover Android Views, the platform Keystore, LibVLC native code, USB hardware or actual camera outputs. Do not present it as whole-app or hardware coverage.
 
@@ -43,3 +43,5 @@ Beta7 device UI checks verified the named-camera grid fits the TV, moving a draf
 Beta8 onboarding was checked on the TV using an isolated dummy-data preview with no network or microphone permissions. Address / sign-in visibility, hidden default advanced options, and clearing the password on Back passed local UI assertions. Both screen layouts were visually inspected. This does not establish a new end-to-end recorder authentication test or any cloud compatibility. Address parsing has JVM coverage for browser URLs, explicit ports and rejection of unsafe / ambiguous input.
 
 Beta9 regression cases reproduce a saved combined-preview profile containing a newly added, unmapped camera. Recovery retains recorder identity, certificate, labels and known positions, disables combined preview, and survives a subsequent save / reload. Additional cases cover stale dimensions / cells, duplicate cells, added / removed channel identities, stable discovery, separate recorders, and clearing the review marker after a complete mapping. Duplicate camera identities remain invalid. The previous fail-all overview tests now require individual-feed recovery rather than rejecting the entire camera table.
+
+Beta10 regression cases cover hardware playback with missing image-layout dimensions: zoom / pan uses the displayed surface size, all four directions remain usable, delayed aspect-ratio metadata reclamps the position, and returning to 1× resets movement. This complements the existing zoom-limit, focal-point, image-edge and letterboxing checks.
