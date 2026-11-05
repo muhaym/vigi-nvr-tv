@@ -26,6 +26,7 @@ final class CompositeMapping {
     result.columns = columns;
     result.rows = rows;
     result.combined = true;
+    result.overviewNeedsReview = false;
     return result;
   }
 }

@@ -66,6 +66,7 @@ public final class NativeActivity extends Activity {
   final boolean compatibilityDrawing = "m7632".equalsIgnoreCase(android.os.Build.HARDWARE);
   final AutoCycle autoCycle = new AutoCycle();
   int cycleMode = 1;
+  boolean overviewNoticeShown;
   TextView cycleControl;
 
   final Runnable tick =
@@ -228,10 +229,13 @@ public final class NativeActivity extends Activity {
               "Arrange camera groups",
               "Camera layout",
               "Recorder connection",
-              "Overview settings",
+              profile.overviewNeedsReview
+                  ? "Overview settings · review needed"
+                  : "Overview settings",
               "Lock now",
               "Change pattern",
-              "Check native recorder connection"
+              "Check native recorder connection",
+              "Refresh camera list"
             },
             (d, w) -> {
               if (w == 0) groupMenu();
@@ -244,6 +248,7 @@ public final class NativeActivity extends Activity {
                 AppLock.require(this);
               } else if (w == 5) AppLock.change(this);
               else if (w == 6) checkNativeStream();
+              else if (w == 7) refreshCameras();
             })
         .setNegativeButton("Close", null)
         .show();
@@ -1085,6 +1090,83 @@ public final class NativeActivity extends Activity {
             });
   }
 
+  void refreshCameras() {
+    if (user.isEmpty() || profile.host.isEmpty() || !profile.host.equals(host)) {
+      account();
+      return;
+    }
+    final RecorderProfile source = profile;
+    final String username = user, secret = password;
+    closeTalk();
+    closeAlarm();
+    AlertDialog progress =
+        new AlertDialog.Builder(this)
+            .setTitle("Refresh camera list")
+            .setMessage("Finding cameras through your recorder…")
+            .setNegativeButton("Cancel", null)
+            .create();
+    progress.show();
+    new Thread(
+            () -> {
+              try (NvrWebControl api =
+                  new NvrWebControl(
+                      source.host,
+                      source.ports.https,
+                      username,
+                      secret,
+                      ProfileStore.certificate(this, source.host))) {
+                api.login();
+                RecorderProfile updated = RecorderProfile.parse(source.json());
+                updated.cameras.clear();
+                updated.cameras.putAll(CameraDiscovery.parse(api.cameraList()));
+                if (updated.cameras.isEmpty())
+                  throw new java.io.IOException("Recorder returned no cameras");
+                updated.inheritOverview(source);
+                ui.post(
+                    () -> {
+                      if (!progress.isShowing()) return;
+                      progress.dismiss();
+                      if (!resumed || !AppLock.allowed(this) || profile != source) return;
+                      try {
+                        ProfileStore.save(this, updated);
+                        profile = updated;
+                        names = profile.names();
+                        loadGroups();
+                        groupIndex = Math.min(groupIndex, groups.size() - 1);
+                        page = 0;
+                        detail = false;
+                        replayStart = 0;
+                        if (!profile.combined) pageSize = Math.min(4, pageSize);
+                        wall.names = names;
+                        wall.mapping(profile.cells(), profile.columns, profile.rows);
+                        render();
+                        toast(
+                            "Found "
+                                + profile.cameras.size()
+                                + " cameras"
+                                + (profile.overviewNeedsReview
+                                    ? ". Review overview positions for 8 / 16 layouts."
+                                    : ""));
+                      } catch (Exception failed) {
+                        toast("Could not save the camera list. Your previous setup was preserved.");
+                      }
+                    });
+              } catch (Exception failed) {
+                ui.post(
+                    () -> {
+                      if (!progress.isShowing()) return;
+                      progress.dismiss();
+                      if (resumed && AppLock.allowed(this))
+                        toast(
+                            "Could not refresh cameras. Check recorder connection and account"
+                                + " permissions; your saved list was preserved.");
+                    });
+              }
+            },
+            "recorder-camera-refresh")
+        .start();
+  }
+
   void individualGrid(ArrayList<Integer> ids) {
     int columns = ViewLayout.columns(pageSize), rows = ViewLayout.rows(pageSize);
     LinearLayout grid = new LinearLayout(this);
@@ -1177,6 +1259,8 @@ public final class NativeActivity extends Activity {
 
   boolean saveAccount() {
     try {
+      profile.repairOverview();
+      RecorderProfile.parse(profile.json());
       String data =
           new JSONObject().put("host", host).put("user", user).put("password", password).toString();
       Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
@@ -1578,6 +1662,10 @@ public final class NativeActivity extends Activity {
     root.setVisibility(View.VISIBLE);
     lastInteraction = SystemClock.uptimeMillis();
     resumed = true;
+    if (profile.overviewNeedsReview && !overviewNoticeShown) {
+      overviewNoticeShown = true;
+      toast("Camera list recovered. Review overview positions before using 8 / 16 layouts.");
+    }
     if (AlarmSafety.any(this))
       toast("A camera alarm stop needs confirmation. Open its Alarm panel to stop it.");
     if (user.isEmpty())

@@ -52,3 +52,7 @@ flowchart LR
 Add a sanitised fixture and tests before accepting a new response variant or protocol. Keep channel conversion in the corresponding transport; do not spread firmware offsets through UI code. Never guess authentication or silently weaken TLS. Eight / sixteen-camera selection opens explicit combined-preview setup rather than disabling menu rows. The one / four-camera layouts retain individual streams. Live Left / Right is intercepted only on the single-video surface; playback, focused controls, dialogs and zoom retain their own key behaviour.
 
 A camera without a speaker / motor / alarm is not expected to offer that action. Unknown hardware must be recorded as untested rather than declared compatible.
+
+## Camera-table changes and recovery
+
+Camera identities remain strict, while an invalid combined-preview grid is recoverable. Missing, duplicate or out-of-range cells disable combined preview and set a review marker, preserving the recorder host, trusted certificate and camera table for individual streams. Discovery reuses known positions only for the same recorder and requires review when channel identities change. `ProfileStore` and account writes validate before persistence. Workspace camera refresh reads through the saved pinned connection; cancellation, failed discovery, loss of foreground authorisation or a changed source profile prevents application of that result.

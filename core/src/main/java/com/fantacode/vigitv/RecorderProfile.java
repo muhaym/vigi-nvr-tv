@@ -10,6 +10,7 @@ final class RecorderProfile {
   RecorderPorts ports = RecorderPorts.defaults();
   int columns = 4, rows = 4;
   boolean combined = false;
+  boolean overviewNeedsReview = false;
   final TreeMap<Integer, Camera> cameras = new TreeMap<>();
 
   static final class Camera {
@@ -67,6 +68,49 @@ final class RecorderProfile {
     return result;
   }
 
+  /** A stale overview must never make the recorder account or camera table unreadable. */
+  boolean repairOverview() {
+    boolean invalid = columns < 1 || columns > 8 || rows < 1 || rows > 8;
+    if (invalid) {
+      columns = 4;
+      rows = 4;
+    }
+    Set<Integer> used = new HashSet<>();
+    for (Camera camera : cameras.values()) {
+      if (camera.cell < -1 || camera.cell >= columns * rows) {
+        camera.cell = -1;
+        invalid = true;
+      }
+      if (combined && (camera.cell < 0 || !used.add(camera.cell))) invalid = true;
+    }
+    if (invalid) {
+      combined = false;
+      overviewNeedsReview = true;
+    }
+    return invalid;
+  }
+
+  /** Discovery owns names and identities; only reuse overview positions after comparing tables. */
+  void inheritOverview(RecorderProfile previous) {
+    if (!host.equals(previous.host)) return;
+    combined = previous.combined;
+    overviewNeedsReview = previous.overviewNeedsReview;
+    columns = previous.columns;
+    rows = previous.rows;
+    for (Camera camera : cameras.values()) {
+      Camera old = previous.cameras.get(camera.channel);
+      if (old != null) {
+        camera.cell = old.cell;
+        camera.lens = old.lens;
+      }
+    }
+    if (previous.combined && !cameras.keySet().equals(previous.cameras.keySet())) {
+      combined = false;
+      overviewNeedsReview = true;
+    }
+    repairOverview();
+  }
+
   JSONObject json() throws JSONException {
     JSONArray list = new JSONArray();
     for (Camera c : cameras.values())
@@ -88,6 +132,7 @@ final class RecorderProfile {
                 .put("rtsp", ports.rtsp)
                 .put("talk", ports.talk))
         .put("combined", combined)
+        .put("overviewNeedsReview", overviewNeedsReview)
         .put("columns", columns)
         .put("rows", rows)
         .put("cameras", list);
@@ -106,32 +151,22 @@ final class RecorderProfile {
     profile.certificate = json.optString("certificate", "");
     profile.columns = json.optInt("columns", 4);
     profile.rows = json.optInt("rows", 4);
-    if (profile.columns < 1 || profile.columns > 8 || profile.rows < 1 || profile.rows > 8)
-      throw new JSONException("Invalid overview grid");
     profile.combined = json.optBoolean("combined", false);
+    profile.overviewNeedsReview = json.optBoolean("overviewNeedsReview", false);
     JSONArray cameras = json.optJSONArray("cameras");
     if (cameras != null)
       for (int i = 0; i < cameras.length(); i++) {
         JSONObject item = cameras.getJSONObject(i);
         int id = item.getInt("channel"), cell = item.optInt("cell", -1);
-        if (id < 1
-            || id > MAX_CHANNELS
-            || profile.cameras.containsKey(id)
-            || cell < -1
-            || cell >= profile.columns * profile.rows)
-          throw new JSONException("Invalid camera mapping");
+        if (id < 1 || id > MAX_CHANNELS || profile.cameras.containsKey(id))
+          throw new JSONException("Invalid camera identity");
         String name = item.optString("name", "Camera " + id).trim();
         profile.cameras.put(
             id,
             new Camera(
                 id, name.isEmpty() ? "Camera " + id : name, cell, item.optBoolean("lens", false)));
       }
-    if (profile.combined) {
-      java.util.HashSet<Integer> mapped = new java.util.HashSet<>();
-      for (Camera camera : profile.cameras.values())
-        if (camera.cell < 0 || !mapped.add(camera.cell))
-          throw new JSONException("Combined overview requires a unique cell for every camera");
-    }
+    profile.repairOverview();
     return profile;
   }
 }

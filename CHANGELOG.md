@@ -1,5 +1,12 @@
 # Changes
 
+## 0.9.0-beta9
+
+- Recover recorder identity and camera lists when an added camera has no combined-preview position, or a saved overview has duplicate / stale cells. Use individual feeds until the overview is reviewed.
+- Reconcile camera discovery with existing positions and disable combined preview when the channel table changes; preserve known assignments for editing.
+- Add Workspace → Refresh camera list using the saved, pinned recorder connection. Failed or cancelled refreshes preserve the saved list.
+- Validate profiles before saving and add regression tests for camera additions, removals and recovery across restarts.
+
 ## 0.9.0-beta8
 
 - Split recorder onboarding into address / identity verification and sign-in, with ports and manual fallback under Advanced.

@@ -10,15 +10,23 @@ import org.json.JSONObject;
 final class ProfileStore {
   static RecorderProfile read(Context context) {
     try {
-      return RecorderProfile.parse(
-          new JSONObject(
-              context.getSharedPreferences("native", 0).getString("recorder_profile", "")));
+      RecorderProfile profile =
+          RecorderProfile.parse(
+              new JSONObject(
+                  context.getSharedPreferences("native", 0).getString("recorder_profile", "")));
+      if (profile.overviewNeedsReview)
+        android.util.Log.i(
+            "RecorderProfile",
+            "Recovered camera list; overview needs review; cameras=" + profile.cameras.size());
+      return profile;
     } catch (Exception absent) {
       return new RecorderProfile();
     }
   }
 
   static void save(Context context, RecorderProfile profile) throws Exception {
+    profile.repairOverview();
+    RecorderProfile.parse(profile.json());
     if (!context
         .getSharedPreferences("native", 0)
         .edit()

@@ -39,7 +39,7 @@ public class ProfileTest {
   }
 
   @Test
-  public void rejectsDuplicateChannelsAndOutOfBoundsCells() throws Exception {
+  public void rejectsDuplicateChannelsButRecoversOutOfBoundsOverviewCells() throws Exception {
     JSONObject base =
         new JSONObject(
             "{host:'recorder.local',columns:2,rows:2,cameras:[{channel:1,name:'A',cell:0},{channel:1,name:'B',cell:1}]}");
@@ -49,11 +49,10 @@ public class ProfileTest {
     } catch (JSONException expected) {
     }
     base.put("cameras", new JSONArray("[{channel:1,cell:4}]"));
-    try {
-      RecorderProfile.parse(base);
-      fail();
-    } catch (JSONException expected) {
-    }
+    RecorderProfile recovered = RecorderProfile.parse(base);
+    assertEquals(1, recovered.cameras.size());
+    assertEquals(-1, recovered.cameras.get(1).cell);
+    assertTrue(recovered.overviewNeedsReview);
   }
 
   @Test
@@ -78,7 +77,7 @@ public class ProfileTest {
   }
 
   @Test
-  public void rejectsAmbiguousCombinedCameraMappings() throws Exception {
+  public void disablesAmbiguousCombinedMappingsWithoutDiscardingCameras() throws Exception {
     for (String cameras :
         new String[] {"[{channel:1,cell:0},{channel:2,cell:0}]", "[{channel:1,cell:-1}]"}) {
       JSONObject profile =
@@ -86,11 +85,10 @@ public class ProfileTest {
               .put("host", "recorder.local")
               .put("combined", true)
               .put("cameras", new JSONArray(cameras));
-      try {
-        RecorderProfile.parse(profile);
-        fail();
-      } catch (JSONException expected) {
-      }
+      RecorderProfile recovered = RecorderProfile.parse(profile);
+      assertEquals(new JSONArray(cameras).length(), recovered.cameras.size());
+      assertFalse(recovered.combined);
+      assertTrue(recovered.overviewNeedsReview);
     }
   }
 }

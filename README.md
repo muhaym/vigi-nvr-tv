@@ -34,6 +34,7 @@ Use an Android TV / Google TV device running Android 8.0 (API 26) or newer, on t
 4. Choose **Connect** to discover cameras automatically. **Advanced options** on the address step contains an optional recorder name, manual camera-count fallback and port overrides. Back from sign-in clears the password and returns to the address step.
 5. Create groups from **Workspace → Arrange camera groups**. Select a layout and optional cycle interval. Press OK on a camera for playback, sound, talk, zoom and alarms.
 6. Selecting 8 or 16 opens **Overview settings** when combined preview has not been configured. Enable it on the recorder separately, then match its grid in **Arrange overview** by choosing camera names for each tile. Unused tiles are labelled **Empty**; changes remain a draft until Save. The selected layout opens after a valid mapping is saved. The app never changes recorder settings automatically.
+7. After adding a camera to the NVR, choose **Workspace → Refresh camera list**. Existing groups are preserved. If the channel table changed, individual feeds remain available while **Overview settings · review needed** lets you check combined-preview positions before returning to 8 / 16 layouts.
 
 The remote's voice-search microphone is generally unavailable to ordinary apps; use a working USB microphone for talk. Video currently uses unencrypted RTSP over TCP. Keep the recorder on a trusted LAN or VPN. See [security and privacy](SECURITY.md).
 

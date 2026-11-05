@@ -353,18 +353,7 @@ final class RecorderSetup {
                     profile.cameras.put(
                         id, new RecorderProfile.Camera(id, "Camera " + id, -1, false));
                 }
-                if (address.equals(previous.host)) {
-                  profile.combined = previous.combined;
-                  profile.rows = previous.rows;
-                  profile.columns = previous.columns;
-                  for (RecorderProfile.Camera camera : profile.cameras.values()) {
-                    RecorderProfile.Camera old = previous.cameras.get(camera.channel);
-                    if (old != null) {
-                      camera.cell = old.cell;
-                      camera.lens = old.lens;
-                    }
-                  }
-                }
+                profile.inheritOverview(previous);
                 owner.runOnUiThread(
                     () -> {
                       if (!alive()) return;
