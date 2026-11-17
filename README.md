@@ -14,6 +14,7 @@ Watch grouped cameras, browse recordings and use supported camera controls from 
 - Organise cameras into your own groups, with fixed **1 / 4 / 8 / 16** layouts.
 - Rotate individual cameras or pages every **5 / 15 / 30 / 60 seconds**, silently. Remote activity postpones cycling; opening a camera pauses it.
 - Open full-resolution live video and recorded playback with a remote-controlled timeline. In live single-camera view, Left / Right switches through the selected group; Up / Down reaches the controls.
+- Prototype a two-speaker PA test from **Workspace → PA prototype · two speakers**: select two free rooms, check allocations without audio, then explicitly start a ten-second USB microphone test. Concurrent NVR allocations and actual audible output must be verified separately; synchronized playback is not guaranteed.
 - Talk using a **USB microphone**: conversation mode or hold / tap push-to-talk, where supported by the NVR and camera.
 - Digital zoom and movement around the picture; optical lens zoom where the recorder reports support.
 - Start / stop a camera's supported siren and light through a confirmed manual alarm action.

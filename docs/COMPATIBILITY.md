@@ -47,3 +47,7 @@ To report a new compatible device, use the repository's compatibility report tem
 ### MStar physical-display workaround
 
 On the tested Haier `m7632` graphics platform, camera frames appeared in Android screenshots while the physical panel displayed black until another window appeared. Beta5 keeps camera textures blended in an off-screen app graphics layer on `m7632` hardware. The owner confirmed the physical panel after paging, full-screen return and five-second cycling on 31 October 2026. Other TVs on this platform remain untested. The workaround does not change global TV developer settings.
+
+## Two-speaker PA prototype
+
+On 17 November 2026, two concurrent camera-speaker sessions through the tested NVR were accepted. The Jabra SPEAK 510 USB microphone supplied one encoded stream to both; the owner confirmed audible output at both speakers. The ten-second prototype returned to microphone-off. Larger speaker groups, music and acoustic synchronization remain untested.

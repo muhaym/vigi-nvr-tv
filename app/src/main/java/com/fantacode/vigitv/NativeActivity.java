@@ -41,6 +41,7 @@ public final class NativeActivity extends Activity {
   boolean detail = false, resumed = false, audio = false, paused = false;
   long replayStart = 0, replayWindowStart = 0, replayWindowEnd = 0;
   TalkDialog talkDialog;
+  PaDialog paDialog;
   AlarmDialog alarmDialog;
   RecorderSetup recorderSetup;
   int pendingTalkChannel = -1;
@@ -235,7 +236,8 @@ public final class NativeActivity extends Activity {
               "Lock now",
               "Change pattern",
               "Check native recorder connection",
-              "Refresh camera list"
+              "Refresh camera list",
+              "PA prototype · two speakers"
             },
             (d, w) -> {
               if (w == 0) groupMenu();
@@ -249,6 +251,7 @@ public final class NativeActivity extends Activity {
               } else if (w == 5) AppLock.change(this);
               else if (w == 6) checkNativeStream();
               else if (w == 7) refreshCameras();
+              else if (w == 8) showPa();
             })
         .setNegativeButton("Close", null)
         .show();
@@ -1551,11 +1554,35 @@ public final class NativeActivity extends Activity {
   }
 
   void closeTalk() {
+    if (paDialog != null) {
+      PaDialog dialog = paDialog;
+      paDialog = null;
+      dialog.dismiss();
+    }
     if (talkDialog != null) {
       TalkDialog dialog = talkDialog;
       talkDialog = null;
       dialog.dismiss();
     }
+  }
+
+  void showPa() {
+    if (!resumed || !AppLock.allowed(this)) return;
+    if (profile.cameras.size() < 2 || user.isEmpty()) {
+      toast("Connect a recorder with at least two cameras first.");
+      return;
+    }
+    if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO)
+        != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+      AppLock.beginPermission(this, 92);
+      requestPermissions(new String[] {android.Manifest.permission.RECORD_AUDIO}, 92);
+      return;
+    }
+    closeTalk();
+    closeAlarm();
+    closeZoom(true);
+    paDialog = new PaDialog(this, profile, user, password, () -> resumed && AppLock.allowed(this));
+    paDialog.show();
   }
 
   void showTalk() {
@@ -1588,6 +1615,15 @@ public final class NativeActivity extends Activity {
   public void onRequestPermissionsResult(int request, String[] permissions, int[] results) {
     super.onRequestPermissionsResult(request, permissions, results);
     AppLock.endPermission(this, request);
+    if (request == 92) {
+      if (results.length > 0 && results[0] == android.content.pm.PackageManager.PERMISSION_GRANTED)
+        ui.postDelayed(
+            () -> {
+              if (resumed && AppLock.allowed(this)) showPa();
+            },
+            300);
+      else toast("Allow microphone access to run the PA microphone test.");
+    }
     if (request == 91) {
       int target = pendingTalkChannel;
       pendingTalkChannel = -1;

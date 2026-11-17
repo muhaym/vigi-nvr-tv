@@ -1,5 +1,12 @@
 # Changes
 
+## 0.9.0-beta11
+
+- Add an experimental, explicitly started ten-second USB microphone test to exactly two selected camera speakers through the NVR.
+- Check both talk allocations without capturing or sending audio before the live test.
+- Fan out one encoded microphone stream through independent bounded send queues; stop both on failure, cancellation or loss of foreground authorisation.
+- Mute TV playback during the live test and restore it afterwards. No music or all-speaker mode is included in this prototype.
+
 ## 0.9.0-beta10
 
 - Fix digital picture movement when a hardware decoder starts video without reporting fitted image dimensions. Use the displayed surface size until metadata is available.
