@@ -2,11 +2,15 @@ package com.fantacode.vigitv;
 
 import android.content.Context;
 import android.os.*;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/** Explicit, ten-second, two-speaker USB microphone experiment through the saved NVR only. */
+/** Explicit USB microphone announcements through the saved NVR to selected speakers. */
 final class PaController {
+  static final int TEST_MS = 10000, ANNOUNCEMENT_MS = 300000;
+
   interface Listener {
     void state(boolean busy, String text);
 
@@ -23,9 +27,20 @@ final class PaController {
 
   static final class Session {
     final AtomicBoolean cancelled = new AtomicBoolean();
-    volatile TwoSpeakerBroadcast broadcast;
+    final int[] targets;
+    final Map<Integer, AtomicInteger> frames = new ConcurrentHashMap<>();
+    final Map<Integer, String> errors = new ConcurrentHashMap<>();
+    final Set<Integer> connected =
+        Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
+    volatile SpeakerBroadcast broadcast;
     volatile UsbMicSource source;
-    final AtomicInteger firstFrames = new AtomicInteger(), secondFrames = new AtomicInteger();
+    volatile boolean timedOut;
+    Runnable deadline;
+
+    Session(int[] selected) {
+      targets = Arrays.copyOf(selected, selected.length);
+      for (int id : targets) frames.put(id, new AtomicInteger());
+    }
   }
 
   PaController(Context context, TalkController.Authorization auth, Listener listener) {
@@ -39,7 +54,10 @@ final class PaController {
   }
 
   boolean alive(Session s) {
-    return current == s && !s.cancelled.get() && auth.allowed();
+    return current == s
+        && !s.cancelled.get()
+        && auth.allowed()
+        && (s.broadcast == null || !s.broadcast.closed);
   }
 
   void post(Session s, Runnable action) {
@@ -49,49 +67,56 @@ final class PaController {
         });
   }
 
-  void stop() {
-    Session s = current;
-    if (s == null) return;
-    s.cancelled.set(true);
-    if (s.broadcast != null) s.broadcast.close();
+  void closeSource(Session s) {
     new Thread(
             () -> {
               if (s.source != null) s.source.close();
             },
             "pa-mic-stop")
         .start();
-    listener.state(true, "Stopping both speakers…");
+  }
+
+  void stop() {
+    Session s = current;
+    if (s == null) return;
+    s.cancelled.set(true);
+    if (s.broadcast != null) s.broadcast.close();
+    closeSource(s);
+    listener.state(true, "Stopping all speakers…");
   }
 
   void start(
-      String host, String username, String password, int first, int second, boolean checkOnly) {
+      String host,
+      String username,
+      String password,
+      int[] selected,
+      boolean checkOnly,
+      int durationMs) {
     if (busy() || !auth.allowed()) return;
-    Session s = new Session();
+    if (durationMs != TEST_MS && durationMs != ANNOUNCEMENT_MS)
+      throw new IllegalArgumentException("Unsupported announcement duration");
+    if (selected == null || selected.length == 0) return;
+    Session s = new Session(selected);
     current = s;
     listener.state(
         true,
-        checkOnly
-            ? "Checking two NVR talk sessions · microphone off"
-            : "Preparing both speakers · microphone off");
-    listener.speaker(first, "Connecting…");
-    listener.speaker(second, "Waiting…");
+        (checkOnly ? "Checking " : "Preparing ") + s.targets.length + " speakers · microphone off");
+    for (int id : s.targets) listener.speaker(id, "Waiting…");
     new Thread(
             () -> {
               String result = "Stopped · microphone off";
-              boolean sent = false;
+              boolean sent = false, checkPassed = false;
               try {
-                // Verify a USB input exists, but do not capture until both talk sessions are
-                // accepted.
                 if (!checkOnly) s.source = new UsbMicSource(context);
-                TwoSpeakerBroadcast broadcast =
-                    new TwoSpeakerBroadcast(
-                        first,
-                        second,
+                SpeakerBroadcast broadcast =
+                    new SpeakerBroadcast(
+                        s.targets,
                         channel -> {
                           NativeNvrSession transport = RecorderServices.talk(context, host);
-                          return new TwoSpeakerBroadcast.Sink() {
+                          return new SpeakerBroadcast.Sink() {
                             public void open() throws Exception {
                               if (!alive(s)) throw new java.io.IOException("Broadcast stopped");
+                              post(s, () -> listener.speaker(channel, "Connecting…"));
                               transport.login(username, password);
                               if (!alive(s)) throw new java.io.IOException("Broadcast stopped");
                               transport.allocateTalk(channel, "half_duplex");
@@ -100,7 +125,7 @@ final class PaController {
                             public void send(byte[] frame) throws Exception {
                               if (!alive(s)) throw new java.io.IOException("Broadcast stopped");
                               transport.sendAudio(frame);
-                              (channel == first ? s.firstFrames : s.secondFrames).incrementAndGet();
+                              s.frames.get(channel).incrementAndGet();
                             }
 
                             public void cancel() {
@@ -112,33 +137,69 @@ final class PaController {
                             }
                           };
                         },
-                        channel -> {
-                          android.util.Log.i(
-                              "PaPrototype", "NVR talk allocation accepted camera=" + channel);
-                          post(s, () -> listener.speaker(channel, "NVR session accepted"));
+                        new SpeakerBroadcast.Observer() {
+                          public void connected(int channel) {
+                            s.connected.add(channel);
+                            android.util.Log.i(
+                                "PaBroadcast", "NVR talk allocation accepted camera=" + channel);
+                            post(s, () -> listener.speaker(channel, "Connection accepted"));
+                          }
+
+                          public void failed(Exception error) {
+                            if (error instanceof SpeakerBroadcast.SpeakerFailure) {
+                              int id = ((SpeakerBroadcast.SpeakerFailure) error).channel;
+                              String text = "Connection unavailable";
+                              Throwable cause = error.getCause();
+                              if (cause != null
+                                  && cause.getMessage() != null
+                                  && cause.getMessage().startsWith("Recorder"))
+                                text = cause.getMessage();
+                              s.errors.put(id, text);
+                            }
+                            // Unblock microphone reads as soon as any network sender fails.
+                            if (s.source != null) closeSource(s);
+                          }
                         });
                 s.broadcast = broadcast;
                 if (!alive(s)) return;
                 broadcast.connect();
                 if (!alive(s)) return;
                 if (checkOnly) {
-                  result = "Both NVR talk requests accepted. No microphone audio was sent.";
+                  checkPassed = true;
+                  result =
+                      "All "
+                          + s.targets.length
+                          + " connections accepted · no microphone audio sent";
                 } else {
                   broadcast.start();
                   if (!alive(s)) return;
                   s.source.open(16000);
                   if (!alive(s)) return;
+                  s.deadline =
+                      () -> {
+                        if (current == s && !s.cancelled.get()) {
+                          s.timedOut = true;
+                          stop();
+                        }
+                      };
+                  ui.postDelayed(s.deadline, durationMs);
                   post(
                       s,
                       () ->
                           listener.state(
-                              true, "Microphone on · sending to both speakers · 10 seconds"));
+                              true,
+                              "Microphone on · "
+                                  + s.targets.length
+                                  + " speakers · "
+                                  + (durationMs == TEST_MS
+                                      ? "10-second test"
+                                      : "Stop all to finish; five-minute limit")));
                   android.util.Log.i(
-                      "PaPrototype", "USB transmission started cameras=" + first + "," + second);
+                      "PaBroadcast", "USB transmission started speakerCount=" + s.targets.length);
                   NativeTalkMux mux = new NativeTalkMux();
                   MicSignal signal = new MicSignal();
                   short[] samples = new short[640];
-                  long until = SystemClock.elapsedRealtime() + 10000;
+                  long until = SystemClock.elapsedRealtime() + durationMs;
                   while (alive(s) && SystemClock.elapsedRealtime() < until) {
                     broadcast.check();
                     int filled = 0;
@@ -151,51 +212,68 @@ final class PaController {
                     broadcast.send(mux.frame(samples, filled));
                     sent = true;
                   }
-                  broadcast.check();
-                  result = "Ten-second test ended · microphone off";
+                  if (!s.cancelled.get()) broadcast.check();
+                  result =
+                      durationMs == TEST_MS
+                          ? "Test ended · microphone off"
+                          : "Five-minute limit reached · microphone off";
                 }
               } catch (Exception error) {
                 if (!s.cancelled.get()) {
                   String detail = error.getMessage();
                   result =
                       error instanceof SecurityException
-                          ? "Allow microphone access to run the test."
-                          : detail != null
-                                  && (detail.startsWith("Recorder")
-                                      || detail.startsWith("Connect a USB")
-                                      || detail.startsWith("The USB")
-                                      || detail.startsWith("USB microphone"))
-                              ? detail + " · both speakers stopped"
-                              : sent
-                                  ? "Speaker connection interrupted · both speakers stopped"
-                                  : "Could not prepare both speakers · no microphone audio sent";
+                          ? "Allow microphone access to announce."
+                          : s.broadcast != null && s.broadcast.failure != null
+                              ? "A speaker connection failed · all speakers stopped. Review the"
+                                    + " list below."
+                              : detail != null
+                                      && (detail.startsWith("Connect a USB")
+                                          || detail.startsWith("The USB")
+                                          || detail.startsWith("USB microphone"))
+                                  ? detail + " · all speakers stopped"
+                                  : sent
+                                      ? "Announcement interrupted · all speakers stopped"
+                                      : "Could not prepare all speakers · no microphone audio sent";
                 }
               } finally {
+                if (s.deadline != null) ui.removeCallbacks(s.deadline);
                 if (s.broadcast != null) s.broadcast.close();
                 if (s.source != null) s.source.close();
-                final String end = s.cancelled.get() ? "Stopped · microphone off" : result;
-                android.util.Log.i(
-                    "PaPrototype",
-                    "Test stopped camera="
-                        + first
-                        + " frames="
-                        + s.firstFrames.get()
-                        + " camera="
-                        + second
-                        + " frames="
-                        + s.secondFrames.get());
+                final String end =
+                    s.timedOut
+                        ? (durationMs == TEST_MS
+                            ? "Test ended · microphone off"
+                            : "Five-minute limit reached · microphone off")
+                        : s.cancelled.get() ? "Stopped · microphone off" : result;
+                final boolean accepted = checkPassed;
+                for (int id : s.targets)
+                  android.util.Log.i(
+                      "PaBroadcast", "Stopped camera=" + id + " frames=" + s.frames.get(id).get());
                 post(
                     s,
                     () -> {
                       current = null;
                       listener.level(0);
-                      listener.speaker(first, "Closed · " + s.firstFrames.get() + " frames sent");
-                      listener.speaker(second, "Closed · " + s.secondFrames.get() + " frames sent");
+                      for (int id : s.targets) {
+                        int frames = s.frames.get(id).get();
+                        listener.speaker(
+                            id,
+                            s.errors.containsKey(id)
+                                ? s.errors.get(id)
+                                : frames > 0
+                                    ? "Stopped · " + frames + " frames sent"
+                                    : accepted
+                                        ? "Connection accepted"
+                                        : s.connected.contains(id)
+                                            ? "Closed · no audio sent"
+                                            : "Not checked");
+                      }
                       listener.state(false, end);
                     });
               }
             },
-            "pa-two-speaker-test")
+            "pa-announcement")
         .start();
   }
 }

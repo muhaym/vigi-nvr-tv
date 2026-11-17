@@ -1,5 +1,12 @@
 # Changes
 
+## 0.9.0-beta12
+
+- Extend PA to all cameras or a chosen speaker subset, with saved selections and camera-group shortcuts.
+- Add Start PA / Stop all announcements with a five-minute limit, alongside silent connection checks and ten-second tests.
+- Keep speaker-level results visible; any connection failure stops the selected group and unblocks microphone reads.
+- Generalize fan-out to 1–96 distinct channel identities and test single, small and large synthetic selections. Hardware concurrency limits remain recorder-specific.
+
 ## 0.9.0-beta11
 
 - Add an experimental, explicitly started ten-second USB microphone test to exactly two selected camera speakers through the NVR.

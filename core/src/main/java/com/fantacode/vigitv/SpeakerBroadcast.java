@@ -5,8 +5,8 @@ import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/** Two independently allocated NVR sessions, fed identical frames from one microphone clock. */
-final class TwoSpeakerBroadcast implements AutoCloseable {
+/** Selected NVR speaker sessions, fed identical frames from one microphone clock. */
+final class SpeakerBroadcast implements AutoCloseable {
   interface Sink extends AutoCloseable {
     void open() throws Exception;
 
@@ -24,6 +24,17 @@ final class TwoSpeakerBroadcast implements AutoCloseable {
 
   interface Observer {
     void connected(int channel);
+
+    default void failed(Exception error) {}
+  }
+
+  static final class SpeakerFailure extends IOException {
+    final int channel;
+
+    SpeakerFailure(int channel, Exception cause) {
+      super("Speaker " + channel + " connection failed", cause);
+      this.channel = channel;
+    }
   }
 
   final int[] channels;
@@ -34,11 +45,15 @@ final class TwoSpeakerBroadcast implements AutoCloseable {
   volatile boolean closed, ready, running;
   volatile Exception failure;
 
-  TwoSpeakerBroadcast(int first, int second, Factory factory, Observer observer) {
-    NativeNvrSession.nativeChannel(first);
-    NativeNvrSession.nativeChannel(second);
-    if (first == second) throw new IllegalArgumentException("Choose two different cameras");
-    channels = new int[] {first, second};
+  SpeakerBroadcast(int[] selected, Factory factory, Observer observer) {
+    if (selected == null || selected.length == 0 || selected.length > RecorderProfile.MAX_CHANNELS)
+      throw new IllegalArgumentException("Choose one or more speakers");
+    channels = Arrays.copyOf(selected, selected.length);
+    Set<Integer> unique = new HashSet<>();
+    for (int channel : channels) {
+      NativeNvrSession.nativeChannel(channel);
+      if (!unique.add(channel)) throw new IllegalArgumentException("Choose each speaker only once");
+    }
     this.factory = factory;
     this.observer = observer;
   }
@@ -60,7 +75,11 @@ final class TwoSpeakerBroadcast implements AutoCloseable {
           }
           endpoints.add(endpoint);
         }
-        sink.open();
+        try {
+          sink.open();
+        } catch (Exception error) {
+          throw new SpeakerFailure(channel, error);
+        }
         check();
         observer.connected(channel);
       }
@@ -77,7 +96,7 @@ final class TwoSpeakerBroadcast implements AutoCloseable {
   void start() throws IOException {
     synchronized (lock) {
       check();
-      if (!ready || running) throw new IOException("Connect both speakers first");
+      if (!ready || running) throw new IOException("Connect all selected speakers first");
       running = true;
       for (Endpoint endpoint : endpoints) {
         endpoint.worker = new Thread(endpoint, "pa-speaker-" + endpoint.channel);
@@ -100,7 +119,8 @@ final class TwoSpeakerBroadcast implements AutoCloseable {
       check();
       if (!endpoint.queue.offer(owned)) {
         IOException error =
-            new IOException("Speaker " + endpoint.channel + " fell behind; both speakers stopped");
+            new SpeakerFailure(
+                endpoint.channel, new IOException("Speaker fell behind; all speakers stopped"));
         fail(error);
         throw error;
       }
@@ -109,15 +129,18 @@ final class TwoSpeakerBroadcast implements AutoCloseable {
 
   void check() throws IOException {
     if (failure != null)
-      throw new IOException("Two-speaker connection failed; both speakers stopped", failure);
+      throw new IOException("Speaker connection failed; all speakers stopped", failure);
     if (closed) throw new IOException("Broadcast stopped");
   }
 
   void fail(Exception error) {
+    boolean firstFailure;
     synchronized (lock) {
-      if (failure == null && !closed) failure = error;
+      firstFailure = failure == null && !closed;
+      if (firstFailure) failure = error;
     }
     close();
+    if (firstFailure) observer.failed(error);
   }
 
   @Override
@@ -171,7 +194,7 @@ final class TwoSpeakerBroadcast implements AutoCloseable {
         if (!closed) fail(interrupted);
         Thread.currentThread().interrupt();
       } catch (Exception error) {
-        if (!closed) fail(error);
+        if (!closed) fail(new SpeakerFailure(channel, error));
       } finally {
         stop();
       }

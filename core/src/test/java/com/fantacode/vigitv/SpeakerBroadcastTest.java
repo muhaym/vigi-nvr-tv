@@ -8,8 +8,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import org.junit.Test;
 
-public class TwoSpeakerBroadcastTest {
-  static class Sink implements TwoSpeakerBroadcast.Sink {
+public class SpeakerBroadcastTest {
+  static class Sink implements SpeakerBroadcast.Sink {
     final List<byte[]> frames = Collections.synchronizedList(new ArrayList<>());
     final CountDownLatch entered = new CountDownLatch(1),
         delivered = new CountDownLatch(1),
@@ -57,15 +57,15 @@ public class TwoSpeakerBroadcastTest {
     return b;
   }
 
-  TwoSpeakerBroadcast pair(Sink a, Sink b, List<Integer> connected) {
-    return new TwoSpeakerBroadcast(2, 4, channel -> channel == 2 ? a : b, connected::add);
+  SpeakerBroadcast pair(Sink a, Sink b, List<Integer> connected) {
+    return new SpeakerBroadcast(new int[] {2, 4}, channel -> channel == 2 ? a : b, connected::add);
   }
 
   @Test
   public void allocationCheckOpensBothButNeverWritesAudio() throws Exception {
     Sink a = new Sink(), b = new Sink();
     List<Integer> connected = new ArrayList<>();
-    try (TwoSpeakerBroadcast p = pair(a, b, connected)) {
+    try (SpeakerBroadcast p = pair(a, b, connected)) {
       p.connect();
       assertTrue(p.ready);
       assertFalse(p.running);
@@ -81,7 +81,7 @@ public class TwoSpeakerBroadcastTest {
   public void identicalOwnedFramesReachBothIndependentWriters() throws Exception {
     Sink a = new Sink(), b = new Sink();
     a.sendGate = new CountDownLatch(1);
-    try (TwoSpeakerBroadcast p = pair(a, b, new ArrayList<>())) {
+    try (SpeakerBroadcast p = pair(a, b, new ArrayList<>())) {
       p.connect();
       p.start();
       byte[] bytes = frame();
@@ -105,7 +105,7 @@ public class TwoSpeakerBroadcastTest {
   public void refusalOfSecondClosesFirstWithoutAnyAudio() throws Exception {
     Sink a = new Sink(), b = new Sink();
     b.failOpen = true;
-    try (TwoSpeakerBroadcast p = pair(a, b, new ArrayList<>())) {
+    try (SpeakerBroadcast p = pair(a, b, new ArrayList<>())) {
       try {
         p.connect();
         fail();
@@ -124,7 +124,7 @@ public class TwoSpeakerBroadcastTest {
   public void writerFailureClosesBothAndRejectsFurtherFrames() throws Exception {
     Sink a = new Sink(), b = new Sink();
     b.failSend = true;
-    try (TwoSpeakerBroadcast p = pair(a, b, new ArrayList<>())) {
+    try (SpeakerBroadcast p = pair(a, b, new ArrayList<>())) {
       p.connect();
       p.start();
       try {
@@ -147,7 +147,7 @@ public class TwoSpeakerBroadcastTest {
     Sink a = new Sink(), b = new Sink();
     a.sendGate = new CountDownLatch(1);
     b.sendGate = new CountDownLatch(1);
-    try (TwoSpeakerBroadcast p = pair(a, b, new ArrayList<>())) {
+    try (SpeakerBroadcast p = pair(a, b, new ArrayList<>())) {
       p.connect();
       p.start();
       // Fill queues while holding both workers at the sender. No audio is emitted.
@@ -172,7 +172,7 @@ public class TwoSpeakerBroadcastTest {
   public void cancellationUnblocksAConnectionStillOpening() throws Exception {
     Sink a = new Sink(), b = new Sink();
     b.openGate = new CountDownLatch(1);
-    try (TwoSpeakerBroadcast p = pair(a, b, new ArrayList<>())) {
+    try (SpeakerBroadcast p = pair(a, b, new ArrayList<>())) {
       AtomicReference<Exception> outcome = new AtomicReference<>();
       Thread t =
           new Thread(
@@ -196,14 +196,14 @@ public class TwoSpeakerBroadcastTest {
 
   @Test
   public void validatesPairStateAndFrameBoundaries() throws Exception {
-    for (int[] ids : new int[][] {{2, 2}, {0, 2}, {2, 97}})
+    for (int[] ids : new int[][] {null, {}, new int[97], {2, 2}, {0, 2}, {2, 97}})
       try {
-        new TwoSpeakerBroadcast(ids[0], ids[1], c -> new Sink(), c -> {});
+        new SpeakerBroadcast(ids, c -> new Sink(), c -> {});
         fail();
       } catch (IllegalArgumentException expected) {
       }
     Sink a = new Sink(), b = new Sink();
-    try (TwoSpeakerBroadcast p = pair(a, b, new ArrayList<>())) {
+    try (SpeakerBroadcast p = pair(a, b, new ArrayList<>())) {
       try {
         p.start();
         fail();
@@ -227,6 +227,117 @@ public class TwoSpeakerBroadcastTest {
           fail();
         } catch (IllegalArgumentException expected) {
         }
+    }
+  }
+
+  @Test
+  public void distributesOneFrameToSingleSmallAndLargeSpeakerSelections() throws Exception {
+    for (int count : new int[] {1, 3, 12, 96}) {
+      int[] ids = new int[count];
+      Map<Integer, Sink> sinks = new LinkedHashMap<>();
+      for (int i = 0; i < count; i++) {
+        ids[i] = i + 1;
+        sinks.put(i + 1, new Sink());
+      }
+      List<Integer> connected = new ArrayList<>();
+      try (SpeakerBroadcast p = new SpeakerBroadcast(ids, sinks::get, connected::add)) {
+        p.connect();
+        assertEquals(count, connected.size());
+        p.start();
+        byte[] expected = frame();
+        p.send(expected);
+        for (Sink sink : sinks.values()) {
+          await(sink.delivered);
+          assertArrayEquals(expected, sink.frames.get(0));
+        }
+      }
+      for (Sink sink : sinks.values()) assertEquals(1, sink.closes.get());
+    }
+  }
+
+  @Test
+  public void selectionIsCapturedBeforeCallerCanChangeIt() throws Exception {
+    int[] ids = {2, 4};
+    List<Integer> connected = new ArrayList<>();
+    try (SpeakerBroadcast p = new SpeakerBroadcast(ids, channel -> new Sink(), connected::add)) {
+      ids[0] = 96;
+      p.connect();
+      assertEquals(Arrays.asList(2, 4), connected);
+    }
+  }
+
+  @Test
+  public void lastSpeakerRefusalClosesTheWholeGroupWithoutAudio() throws Exception {
+    int[] ids = new int[12];
+    Map<Integer, Sink> sinks = new LinkedHashMap<>();
+    for (int i = 0; i < ids.length; i++) {
+      ids[i] = i + 1;
+      sinks.put(i + 1, new Sink());
+    }
+    sinks.get(12).failOpen = true;
+    List<Integer> connected = new ArrayList<>();
+    AtomicInteger failures = new AtomicInteger();
+    try (SpeakerBroadcast p =
+        new SpeakerBroadcast(
+            ids,
+            sinks::get,
+            new SpeakerBroadcast.Observer() {
+              public void connected(int id) {
+                connected.add(id);
+              }
+
+              public void failed(Exception error) {
+                failures.incrementAndGet();
+              }
+            })) {
+      try {
+        p.connect();
+        fail();
+      } catch (SpeakerBroadcast.SpeakerFailure expected) {
+        assertEquals(12, expected.channel);
+      }
+      assertEquals(11, connected.size());
+      assertEquals(1, failures.get());
+      for (Sink sink : sinks.values()) {
+        assertTrue(sink.frames.isEmpty());
+        assertEquals(1, sink.closes.get());
+      }
+    }
+  }
+
+  @Test
+  public void failureNotificationRunsOnceAndManualStopDoesNotReportFailure() throws Exception {
+    AtomicInteger failures = new AtomicInteger();
+    CountDownLatch notified = new CountDownLatch(1);
+    Sink a = new Sink(), b = new Sink();
+    a.failSend = true;
+    b.failSend = true;
+    SpeakerBroadcast.Observer observer =
+        new SpeakerBroadcast.Observer() {
+          public void connected(int id) {}
+
+          public void failed(Exception error) {
+            failures.incrementAndGet();
+            notified.countDown();
+          }
+        };
+    try (SpeakerBroadcast p =
+        new SpeakerBroadcast(new int[] {2, 4}, id -> id == 2 ? a : b, observer)) {
+      p.connect();
+      p.start();
+      try {
+        p.send(frame());
+      } catch (IOException racedFailure) {
+      }
+      await(notified);
+      await(a.closed);
+      await(b.closed);
+      assertEquals(1, failures.get());
+    }
+    try (SpeakerBroadcast p = new SpeakerBroadcast(new int[] {1}, id -> new Sink(), observer)) {
+      p.connect();
+      p.close();
+      assertEquals(1, failures.get());
     }
   }
 }

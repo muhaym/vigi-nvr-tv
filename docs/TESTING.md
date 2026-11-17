@@ -9,7 +9,7 @@ python3 tools/check_source.py
 
 The core is a plain-Java module. Its tests run on the JVM, without production credentials, camera connections or a USB microphone. Local TLS fixtures bind loopback, create disposable test certificates and delete them afterwards. They never contact a real recorder.
 
-The validation run on 17 November 2026 passed **71 JUnit test entries**, including suites with multiple protocol / failure cases. JaCoCo measured **92.0% line coverage and 77.4% branch coverage across the entire core module**, without class exclusions. CI fails below **85% lines or 70% branches**. Reports are in `core/build/reports/jacoco/test/` and uploaded by CI.
+The validation run on 17 November 2026 passed **75 JUnit test entries**, including suites with multiple protocol / failure cases. JaCoCo measured **92.1% line coverage and 77.9% branch coverage across the entire core module**, without class exclusions. CI fails below **85% lines or 70% branches**. Reports are in `core/build/reports/jacoco/test/` and uploaded by CI.
 
 This percentage does **not** cover Android Views, the platform Keystore, LibVLC native code, USB hardware or actual camera outputs. Do not present it as whole-app or hardware coverage.
 
@@ -49,3 +49,5 @@ Beta10 regression cases cover hardware playback with missing image-layout dimens
 Beta11 two-speaker core tests use fake sinks to verify that an allocation check sends no audio, both writers receive identical owned frames, a slow speaker does not block the other writer, refusal / write failure closes both endpoints, queue overflow bounds backlog, cancellation interrupts an opening connection, and invalid / duplicate targets and invalid frame boundaries are rejected. These tests establish application behavior, not NVR concurrency support or audible output; those require a named-room hardware test.
 
 On 17 November 2026, the tested NVR accepted two simultaneous talk allocations without audio (zero frames each). A live USB microphone run wrote 243 frames to each selected connection and closed both. The owner subsequently operated another ten-second run; both connections reported 248 frames, the panel returned to microphone-off, and the owner confirmed audible speech from both speakers. This establishes two-speaker operation on the tested installation, not sample-accurate acoustic synchronization or larger-group compatibility. No music playback was tested.
+
+Beta12 extends the same fan-out tests to 1, 3, 12 and 96 synthetic destinations, immutable selection snapshots, last-speaker refusal across a larger group, and exactly-once failure notification. Constructor cases reject empty / oversized selections and duplicate or invalid channels. These synthetic sizes are not claims about NVR hardware session capacity.

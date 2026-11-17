@@ -51,3 +51,5 @@ On the tested Haier `m7632` graphics platform, camera frames appeared in Android
 ## Two-speaker PA prototype
 
 On 17 November 2026, two concurrent camera-speaker sessions through the tested NVR were accepted. The Jabra SPEAK 510 USB microphone supplied one encoded stream to both; the owner confirmed audible output at both speakers. The ten-second prototype returned to microphone-off. Larger speaker groups, music and acoustic synchronization remain untested.
+
+Beta12 adds persisted all / subset / camera-group selection and start / stop announcements. The owner checked the updated TV controls. The earlier two-speaker audible test remains the hardware evidence; no larger-group acoustic synchronization or music compatibility is claimed from synthetic fan-out tests.

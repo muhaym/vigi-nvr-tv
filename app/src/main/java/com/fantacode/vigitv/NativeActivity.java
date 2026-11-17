@@ -237,7 +237,7 @@ public final class NativeActivity extends Activity {
               "Change pattern",
               "Check native recorder connection",
               "Refresh camera list",
-              "PA prototype · two speakers"
+              "PA announcements"
             },
             (d, w) -> {
               if (w == 0) groupMenu();
@@ -1568,8 +1568,8 @@ public final class NativeActivity extends Activity {
 
   void showPa() {
     if (!resumed || !AppLock.allowed(this)) return;
-    if (profile.cameras.size() < 2 || user.isEmpty()) {
-      toast("Connect a recorder with at least two cameras first.");
+    if (profile.cameras.isEmpty() || user.isEmpty()) {
+      toast("Connect a recorder with cameras first.");
       return;
     }
     if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO)
@@ -1581,7 +1581,8 @@ public final class NativeActivity extends Activity {
     closeTalk();
     closeAlarm();
     closeZoom(true);
-    paDialog = new PaDialog(this, profile, user, password, () -> resumed && AppLock.allowed(this));
+    paDialog =
+        new PaDialog(this, profile, groups, user, password, () -> resumed && AppLock.allowed(this));
     paDialog.show();
   }
 
