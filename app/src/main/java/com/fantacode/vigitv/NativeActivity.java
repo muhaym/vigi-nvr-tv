@@ -85,7 +85,7 @@ public final class NativeActivity extends Activity {
               showScrubTime(position, false);
             }
           }
-          if (detail
+          if ((detail || pageSize == 1)
               && zoomOverlay == null
               && (talkDialog == null || !talkDialog.isShowing())
               && (alarmDialog == null || !alarmDialog.isShowing())
@@ -113,6 +113,7 @@ public final class NativeActivity extends Activity {
     autoCycle.configure(AutoCycle.supported(seconds) ? seconds : 0, SystemClock.uptimeMillis());
     cycleMode = prefs.getInt("auto_cycle_mode", 1);
     if (!profile.combined) pageSize = Math.min(4, pageSize);
+    wallMode = pageSize == 1 && autoCycle.seconds > 0;
     groupIndex = Math.max(0, Math.min(groups.size() - 1, getIntent().getIntExtra("unit", 0)));
     engine =
         new LibVLC(
@@ -393,10 +394,11 @@ public final class NativeActivity extends Activity {
     chromeTop.removeAllViews();
     chromeBar.removeAllViews();
     FrameLayout.LayoutParams stage = (FrameLayout.LayoutParams) wallStage.getLayoutParams();
+    boolean single = detail || pageSize == 1;
     stage.setMargins(
-        detail ? 0 : dp(12), detail ? 0 : dp(64), detail ? 0 : dp(12), detail ? 0 : dp(26));
+        single ? 0 : dp(12), single ? 0 : dp(64), single ? 0 : dp(12), single ? 0 : dp(26));
     wallStage.setLayoutParams(stage);
-    chromeTop.setBackground(detail ? fade(true) : new android.graphics.drawable.ColorDrawable(BG));
+    chromeTop.setBackground(single ? fade(true) : new android.graphics.drawable.ColorDrawable(BG));
     if (detail) {
       wall.suspendWall();
       wall.setVisibility(View.INVISIBLE);
@@ -723,10 +725,11 @@ public final class NativeActivity extends Activity {
     chrome(wallFooter, !hide && !detail);
     if (!detail) {
       FrameLayout.LayoutParams p = (FrameLayout.LayoutParams) wallStage.getLayoutParams();
-      p.setMargins(hide ? 0 : dp(12), hide ? 0 : dp(64), hide ? 0 : dp(12), hide ? 0 : dp(26));
+      boolean full = hide || pageSize == 1;
+      p.setMargins(full ? 0 : dp(12), full ? 0 : dp(64), full ? 0 : dp(12), full ? 0 : dp(26));
       wallStage.setLayoutParams(p);
     }
-    if (hide && detail && !feeds.isEmpty()) feeds.get(0).view.requestFocus();
+    if (hide && (detail || pageSize == 1) && !feeds.isEmpty()) feeds.get(0).view.requestFocus();
     lastInteraction = SystemClock.uptimeMillis();
   }
 
@@ -890,7 +893,7 @@ public final class NativeActivity extends Activity {
     page = 0;
     detail = false;
     replayStart = 0;
-    wallMode = false;
+    wallMode = size == 1 && autoCycle.seconds > 0;
     cycleMode = size == 1 ? 1 : 2;
     prefs.edit().putInt("layout", size).putInt("auto_cycle_mode", cycleMode).apply();
     render();
@@ -922,7 +925,7 @@ public final class NativeActivity extends Activity {
                 page = 0;
                 detail = false;
                 replayStart = 0;
-                wallMode = false;
+                wallMode = true;
               }
               prefs
                   .edit()
@@ -953,6 +956,7 @@ public final class NativeActivity extends Activity {
     }
     if (autoCycle.ready(SystemClock.uptimeMillis(), eligible, pageCount())) {
       page = (page + 1) % pageCount();
+      if (pageSize == 1) wallMode = true;
       render();
     }
   }
@@ -1175,6 +1179,24 @@ public final class NativeActivity extends Activity {
   }
 
   void individualGrid(ArrayList<Integer> ids) {
+    if (pageSize == 1) {
+      if (!ids.isEmpty()) {
+        int id = ids.get(0);
+        Feed feed = new Feed(id, true, 0);
+        feeds.add(feed);
+        wallStage.addView(feed.view, new FrameLayout.LayoutParams(-1, -1));
+        feed.view.setContentDescription(cameraName(id));
+        feed.view.setOnClickListener(
+            v -> {
+              channel = id;
+              detail = true;
+              wallMode = false;
+              render();
+            });
+        if (resumed) start();
+      }
+      return;
+    }
     int columns = ViewLayout.columns(pageSize), rows = ViewLayout.rows(pageSize);
     LinearLayout grid = new LinearLayout(this);
     grid.setOrientation(LinearLayout.VERTICAL);

@@ -1,5 +1,9 @@
 # Changes
 
+## 0.9.0-beta16
+
+- Show single-camera cycling edge to edge, without grid margins or a focus border. Controls overlay the video instead of resizing it, and each automatic camera change returns to full-screen viewing.
+
 ## 0.9.0-beta15
 
 - Accept authenticator codes in a bounded sliding window of two 30-second counters either side of the current counter.
