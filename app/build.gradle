@@ -6,8 +6,8 @@ android {
         applicationId 'com.fantacode.vigitv'
         minSdk 26
         targetSdk 35
-        versionCode 35
-        versionName '0.9.0-beta14'
+        versionCode 36
+        versionName '0.9.0-beta15'
         ndk { abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86_64' }
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }

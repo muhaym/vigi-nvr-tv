@@ -331,7 +331,15 @@ public final class AuthenticatorActivity extends Activity {
         verifiedStep = Totp.match(pending, candidate, System.currentTimeMillis(), -1);
         accepted = verifiedStep >= 0;
         if (!TotpLock.result(this, accepted).commit()) throw new IllegalStateException();
-      } else accepted = TotpLock.verify(this, candidate);
+      } else {
+        Totp.Verdict verdict = TotpLock.check(this, candidate);
+        if (verdict == Totp.Verdict.USED) {
+          message.setText(
+              "That code was already used. Enter the next code from your authenticator.");
+          return;
+        }
+        accepted = verdict == Totp.Verdict.ACCEPTED;
+      }
       if (!accepted) {
         message.setText(
             "Code not accepted. Try the next code.\n\n"

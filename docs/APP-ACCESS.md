@@ -13,7 +13,7 @@ Fresh installations start directly at authenticator setup. There is no preset or
 
 ## Daily use
 
-Open your authenticator and enter the current code for this TV. A successfully used time window is consumed; if you immediately lock and reopen, wait for the next code. Codes are not a reusable PIN. Keep automatic time enabled on phone and TV. There is a small tolerance for clock differences, not an unlimited correction window.
+Open your authenticator and enter the current code for this TV. The sliding window accepts two 30-second counters before and after the TV's current counter. Keep automatic time enabled on phone and TV; this is a bounded tolerance, not unlimited clock correction. A successfully used counter is consumed; if you immediately lock and reopen, enter the next code from your phone. A recognized consumed code gets its own message and does not count as an incorrect attempt. Codes are not a reusable PIN.
 
 After five failed attempts, both normal codes and recovery share a delay, increasing from 30 seconds to at most 15 minutes. Closing and reopening the app does not reset it. App backgrounding and screen-off still relock the camera view.
 

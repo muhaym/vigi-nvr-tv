@@ -102,12 +102,16 @@ final class TotpLock {
   }
 
   static synchronized boolean verify(Context c, char[] candidate) throws Exception {
-    if (!configured(c) || waitMs(c) > 0) return false;
+    return check(c, candidate) == Totp.Verdict.ACCEPTED;
+  }
+
+  static synchronized Totp.Verdict check(Context c, char[] candidate) throws Exception {
+    if (!configured(c) || waitMs(c) > 0) return Totp.Verdict.INVALID;
     byte[] secret = secret(c);
-    long matched;
+    Totp.Result checked;
     try {
-      matched =
-          Totp.match(
+      checked =
+          Totp.check(
               secret,
               candidate,
               System.currentTimeMillis(),
@@ -115,10 +119,13 @@ final class TotpLock {
     } finally {
       Arrays.fill(secret, (byte) 0);
     }
-    SharedPreferences.Editor edit = result(c, matched >= 0);
-    if (matched >= 0) edit.putLong("otp_last", matched);
+    // A consumed code remains rejected, without penalizing a quick relock.
+    if (checked.verdict == Totp.Verdict.USED) return checked.verdict;
+    boolean accepted = checked.verdict == Totp.Verdict.ACCEPTED;
+    SharedPreferences.Editor edit = result(c, accepted);
+    if (accepted) edit.putLong("otp_last", checked.step);
     if (!edit.commit()) throw new IllegalStateException("Could not record attempt");
-    return matched >= 0;
+    return checked.verdict;
   }
 
   static synchronized boolean recover(Context c, char[] candidate) throws Exception {

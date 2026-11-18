@@ -26,14 +26,31 @@ public class TotpTest {
   }
 
   @Test
-  public void acceptsOnlyAdjacentWindowAndNeverReusesConsumedStep() throws Exception {
+  public void acceptsTwoAdjacentWindowsAndNeverReusesConsumedStep() throws Exception {
     long now = 1234567890000L, step = now / 30000;
     for (long offset = -3; offset <= 3; offset++) {
       char[] code = Totp.code(key, step + offset, 6).toCharArray();
-      assertEquals(Math.abs(offset) <= 1 ? step + offset : -1, Totp.match(key, code, now, -1));
-      assertEquals(-1, Totp.match(key, code, now, step + 1));
+      assertEquals(Math.abs(offset) <= 2 ? step + offset : -1, Totp.match(key, code, now, -1));
+      assertEquals(-1, Totp.match(key, code, now, step + 2));
     }
     assertEquals(-1, Totp.match(key, Totp.code(key, step, 6).toCharArray(), now - 30000, step));
+  }
+
+  @Test
+  public void distinguishesConsumedCodesFromIncorrectCodes() throws Exception {
+    long now = 1234567890000L, step = now / 30000;
+    for (int offset = -2; offset <= 2; offset++) {
+      char[] candidate = Totp.code(key, step + offset, 6).toCharArray();
+      assertEquals(Totp.Verdict.ACCEPTED, Totp.check(key, candidate, now, -1).verdict);
+      Totp.Result used = Totp.check(key, candidate, now, step + 2);
+      assertEquals(Totp.Verdict.USED, used.verdict);
+      assertEquals(step + offset, used.step);
+    }
+    assertEquals(Totp.Verdict.INVALID, Totp.check(key, "abcdef".toCharArray(), now, -1).verdict);
+    assertEquals(
+        Totp.Verdict.INVALID,
+        Totp.check(key, Totp.code(key, step - 3, 6).toCharArray(), now, -1).verdict);
+    assertEquals(0, Totp.match(key, Totp.code(key, 0, 6).toCharArray(), 0, -1));
   }
 
   @Test

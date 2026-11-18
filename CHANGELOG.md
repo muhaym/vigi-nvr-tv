@@ -1,5 +1,10 @@
 # Changes
 
+## 0.9.0-beta15
+
+- Accept authenticator codes in a bounded sliding window of two 30-second counters either side of the current counter.
+- Identify consumed codes separately: reject reuse with a clear prompt for the next code, without counting it as an incorrect attempt. Incorrect codes retain shared escalating throttling.
+
 ## 0.9.0-beta14
 
 - Re-check the active lock method when Android resumes an older pattern screen or delivers a new launcher intent. Completed authenticator enrollment no longer returns to a stale pattern screen; no re-enrollment is needed.
