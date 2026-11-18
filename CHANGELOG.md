@@ -1,5 +1,9 @@
 # Changes
 
+## 0.9.0-beta14
+
+- Re-check the active lock method when Android resumes an older pattern screen or delivers a new launcher intent. Completed authenticator enrollment no longer returns to a stale pattern screen; no re-enrollment is needed.
+
 ## 0.9.0-beta13
 
 - Add offline six-digit authenticator access with local QR enrollment and a private recovery code; no account service or hosted page is required.

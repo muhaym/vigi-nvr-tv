@@ -49,11 +49,7 @@ public final class LockActivity extends Activity {
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
     getWindow().getDecorView().setSystemUiVisibility(5894);
     changing = getIntent().getBooleanExtra("change", false);
-    if (TotpLock.configured(this) || !AppLock.configured(this)) {
-      startActivity(new Intent(this, AuthenticatorActivity.class).putExtra("manage", changing));
-      finish();
-      return;
-    }
+    if (routeAuthenticator(true)) return;
     stage = AppLock.configured(this) ? 0 : 1;
     if (AppLock.allowed(this) && !changing) {
       openCameras();
@@ -201,6 +197,7 @@ public final class LockActivity extends Activity {
   }
 
   void submitPattern() {
+    if (routeAuthenticator(false)) return;
     if (busy || AppLock.waitMs(this) > 0) return;
     char[] candidate = board.pattern();
     if (!PatternSecret.valid(candidate)) {
@@ -295,9 +292,34 @@ public final class LockActivity extends Activity {
   @Override
   protected void onResume() {
     super.onResume();
+    if (isFinishing() || routeAuthenticator(false)) return;
     if (board == null) return;
     visible = true;
     ui.post(countdown);
+  }
+
+  /** Launcher/task reuse can resume a pattern screen created before enrollment. */
+  boolean routeAuthenticator(boolean managementRequest) {
+    if (!TotpLock.configured(this) && AppLock.configured(this)) return false;
+    visible = false;
+    generation++;
+    ui.removeCallbacksAndMessages(null);
+    wipeFirst();
+    if (board != null) board.clear();
+    startActivity(
+        new Intent(this, AuthenticatorActivity.class)
+            .putExtra("manage", managementRequest && changing));
+    finish();
+    return true;
+  }
+
+  @Override
+  protected void onNewIntent(Intent intent) {
+    super.onNewIntent(intent);
+    setIntent(intent);
+    changing = intent.getBooleanExtra("change", false);
+    if (routeAuthenticator(true)) return;
+    if (board != null) refresh();
   }
 
   @Override
