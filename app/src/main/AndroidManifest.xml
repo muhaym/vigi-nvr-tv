@@ -7,6 +7,7 @@
   <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
   <queries><intent><action android:name="android.content.pm.action.REQUEST_PERMISSIONS" /></intent></queries>
   <application android:name=".AppLock" android:label="VIGI NVR TV" android:theme="@android:style/Theme.Material.NoActionBar" android:allowBackup="false" android:dataExtractionRules="@xml/data_extraction_rules" android:hardwareAccelerated="true" android:networkSecurityConfig="@xml/network_security_config" android:icon="@drawable/banner" android:banner="@drawable/banner">
+    <activity android:name=".AuthenticatorActivity" android:screenOrientation="landscape" android:exported="false" android:configChanges="orientation|screenSize|keyboardHidden" android:windowSoftInputMode="adjustNothing" />
     <activity android:name=".NativeActivity" android:screenOrientation="landscape" android:exported="false" android:configChanges="orientation|screenSize|keyboardHidden" android:windowSoftInputMode="adjustResize">
     </activity>
     <activity android:name=".LockActivity" android:screenOrientation="landscape" android:exported="true" android:configChanges="orientation|screenSize|keyboardHidden">

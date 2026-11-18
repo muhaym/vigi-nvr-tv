@@ -6,8 +6,8 @@ android {
         applicationId 'com.fantacode.vigitv'
         minSdk 26
         targetSdk 35
-        versionCode 33
-        versionName '0.9.0-beta12'
+        versionCode 34
+        versionName '0.9.0-beta13'
         ndk { abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86_64' }
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
@@ -17,6 +17,8 @@ android {
     testOptions { unitTests.returnDefaultValues = false }
 }
 dependencies {
+    testImplementation 'junit:junit:4.13.2'
+    implementation 'com.google.zxing:core:3.5.3'
     implementation 'org.videolan.android:libvlc-all:3.7.7'
     implementation project(':core')
 }

@@ -46,7 +46,7 @@ public final class AppLock extends Application implements Application.ActivityLi
   }
 
   static boolean configured(Context c) {
-    return prefs(c).contains("verifier") && prefs(c).contains("salt");
+    return TotpLock.configured(c) || (prefs(c).contains("verifier") && prefs(c).contains("salt"));
   }
 
   static boolean allowed(Context c) {
@@ -156,6 +156,7 @@ public final class AppLock extends Application implements Application.ActivityLi
   }
 
   static synchronized boolean verify(Context c, char[] pattern) throws Exception {
+    if (TotpLock.configured(c)) return false;
     if (waitMs(c) > 0) return false;
     boolean match = false;
     if (PatternSecret.valid(pattern)) {

@@ -35,8 +35,8 @@ public final class LockActivity extends Activity {
               wasBlocked = false;
               message.setText(
                   changing
-                      ? "Enter your current pattern to change it."
-                      : "Your cameras are private. Enter your pattern to continue.");
+                      ? "Enter your current pattern to set up authenticator codes."
+                      : "Enter your pattern.");
             }
           }
           ui.postDelayed(this, 1000);
@@ -49,6 +49,11 @@ public final class LockActivity extends Activity {
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
     getWindow().getDecorView().setSystemUiVisibility(5894);
     changing = getIntent().getBooleanExtra("change", false);
+    if (TotpLock.configured(this) || !AppLock.configured(this)) {
+      startActivity(new Intent(this, AuthenticatorActivity.class).putExtra("manage", changing));
+      finish();
+      return;
+    }
     stage = AppLock.configured(this) ? 0 : 1;
     if (AppLock.allowed(this) && !changing) {
       openCameras();
@@ -64,7 +69,7 @@ public final class LockActivity extends Activity {
     copy.setGravity(Gravity.CENTER_VERTICAL);
     copy.setPadding(0, 0, dp(52), 0);
     root.addView(copy, new LinearLayout.LayoutParams(dp(340), dp(330)));
-    TextView brand = text("VIGI NVR TV  /  PRIVATE VIEWING", 11, MUTED);
+    TextView brand = text("VIGI NVR TV", 11, MUTED);
     brand.setLetterSpacing(.15f);
     copy.addView(brand, new LinearLayout.LayoutParams(-1, dp(36)));
     title = text("", 30, WHITE);
@@ -82,6 +87,17 @@ public final class LockActivity extends Activity {
     hint.setSingleLine(false);
     hint.setLineSpacing(dp(4), 1);
     copy.addView(hint, new LinearLayout.LayoutParams(-1, dp(64)));
+    copy.addView(
+        button(
+            "Switch to authenticator",
+            () -> {
+              changing = true;
+              refresh();
+              message.setText(
+                  "Enter your current pattern once to set up phone authenticator codes.");
+              board.requestFocus();
+            }),
+        new LinearLayout.LayoutParams(-2, dp(36)));
     TextView recovery =
         button(
             "Forgot pattern?",
@@ -170,13 +186,13 @@ public final class LockActivity extends Activity {
   void refresh() {
     title.setText(
         stage == 0
-            ? (changing ? "Verify your pattern" : "Unlock workspace")
+            ? (changing ? "Confirm access" : "Unlock cameras")
             : stage == 1 ? "Create your pattern" : "Confirm your pattern");
     message.setText(
         stage == 0
             ? (changing
-                ? "Enter your current pattern to change it."
-                : "Your cameras are private. Enter your pattern to continue.")
+                ? "Enter your current pattern to set up authenticator codes."
+                : "Enter your pattern.")
             : stage == 1
                 ? "First, protect this TV with a pattern. Next, connect your recorder."
                 : "Enter the same pattern again to save it.");
@@ -255,9 +271,9 @@ public final class LockActivity extends Activity {
                     }
                     if (action == 0 && changing) {
                       AppLock.unlocked = true;
-                      stage = 1;
-                      refresh();
-                      board.requestFocus();
+                      startActivity(
+                          new Intent(this, AuthenticatorActivity.class).putExtra("setup", true));
+                      finish();
                     } else {
                       wipeFirst();
                       AppLock.unlocked = true;

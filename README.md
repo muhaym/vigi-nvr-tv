@@ -18,7 +18,7 @@ Watch grouped cameras, browse recordings and use supported camera controls from 
 - Talk using a **USB microphone**: conversation mode or hold / tap push-to-talk, where supported by the NVR and camera.
 - Digital zoom and movement around the picture; optical lens zoom where the recorder reports support.
 - Start / stop a camera's supported siren and light through a confirmed manual alarm action.
-- Protect viewing with a private remote pattern; save the recorder account with Android Keystore encryption.
+- Unlock with offline six-digit authenticator codes, enrolled by scanning a QR once, with one-use recovery and no server. Existing pattern users migrate from **Workspace → App access · authenticator**. Save the recorder account with Android Keystore encryption.
 - Discover camera names through the NVR, or manually configure channels **1–96**. Configure non-default HTTPS, RTSP and native-talk ports.
 
 TP-Link ID sign-in, bound-device cloud discovery and cloud relay streaming are **not implemented**; cloud-bound recorders can still connect over LAN / VPN. See [cloud access status](docs/CLOUD-ACCESS.md).
@@ -30,7 +30,7 @@ One active recorder is supported. Every camera connection goes **through that re
 Use an Android TV / Google TV device running Android 8.0 (API 26) or newer, on the same reachable LAN or VPN as the recorder.
 
 1. Build and install your own APK using the steps below. This initial public repository is a **source release**; a public APK release awaits the native-library distribution checklist.
-2. Choose a private remote pattern. Setup then asks for the recorder address; an IP, hostname or HTTPS browser address is accepted.
+2. Privately scan the setup QR with a TOTP authenticator, enter its six-digit code, and save the recovery code before enabling access. Setup then asks for the recorder address; an IP, hostname or HTTPS browser address is accepted. Existing installations keep their pattern until authenticator setup is completed. See [app access](docs/APP-ACCESS.md).
 3. Compare the recorder certificate fingerprint with a trusted administrator before choosing **Trust recorder**. Only then does the sign-in screen ask for the recorder username and password. Use the recorder account, not a TP-Link ID.
 4. Choose **Connect** to discover cameras automatically. **Advanced options** on the address step contains an optional recorder name, manual camera-count fallback and port overrides. Back from sign-in clears the password and returns to the address step.
 5. Create groups from **Workspace → Arrange camera groups**. Select a layout and optional cycle interval. Press OK on a camera for playback, sound, talk, zoom and alarms.
@@ -44,7 +44,7 @@ The remote's voice-search microphone is generally unavailable to ordinary apps; 
 Install JDK 17+ and Android SDK platform 36 / build tools 35.0.0. Set `ANDROID_HOME` or an untracked `local.properties` containing `sdk.dir=/your/android/sdk`.
 
 ```sh
-./gradlew :core:check :core:jacocoTestReport :app:assembleDebug :app:lintDebug
+./gradlew :core:check :core:jacocoTestReport :app:testDebugUnitTest :app:assembleDebug :app:lintDebug
 python3 tools/check_source.py
 ```
 

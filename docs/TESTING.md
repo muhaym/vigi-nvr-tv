@@ -3,17 +3,19 @@
 ## Automated checks
 
 ```sh
-./gradlew :core:check :core:jacocoTestReport :app:assembleDebug :app:lintDebug
+./gradlew :core:check :core:jacocoTestReport :app:testDebugUnitTest :app:assembleDebug :app:lintDebug
 python3 tools/check_source.py
 ```
 
 The core is a plain-Java module. Its tests run on the JVM, without production credentials, camera connections or a USB microphone. Local TLS fixtures bind loopback, create disposable test certificates and delete them afterwards. They never contact a real recorder.
 
-The validation run on 17 November 2026 passed **75 JUnit test entries**, including suites with multiple protocol / failure cases. JaCoCo measured **92.1% line coverage and 77.9% branch coverage across the entire core module**, without class exclusions. CI fails below **85% lines or 70% branches**. Reports are in `core/build/reports/jacoco/test/` and uploaded by CI.
+The validation run on 18 November 2026 passed **84 JUnit test entries** (83 core, one app QR round-trip), including suites with multiple protocol / failure cases. JaCoCo measured **92.4% line coverage and 79.9% branch coverage across the entire core module**, without class exclusions. CI fails below **85% lines or 70% branches**. Reports are in `core/build/reports/jacoco/test/` and uploaded by CI.
 
 This percentage does **not** cover Android Views, the platform Keystore, LibVLC native code, USB hardware or actual camera outputs. Do not present it as whole-app or hardware coverage.
 
 ## Covered behaviours
+
+- RFC 6238 SHA-1 reference vectors through the year 2603, RFC 4226 six-digit counters, adjacent clock windows, consumed-counter rejection, malformed / Unicode input, Base32 and escaped enrollment URIs, escalating shared throttling, and strict recovery-code normalization. An app JVM test generates the production enrollment QR and independently detects / decodes its standard authenticator URI.
 
 - Sparse profiles, old-profile defaults, custom ports, malformed hosts / input and conflicting camera IDs.
 - Discovery / routing for 4, 8, 16, 32, 64 and 96-channel recorder tables; explicit channel namespaces for live, native talk, lens and alarms.
@@ -51,3 +53,5 @@ Beta11 two-speaker core tests use fake sinks to verify that an allocation check 
 On 17 November 2026, the tested NVR accepted two simultaneous talk allocations without audio (zero frames each). A live USB microphone run wrote 243 frames to each selected connection and closed both. The owner subsequently operated another ten-second run; both connections reported 248 frames, the panel returned to microphone-off, and the owner confirmed audible speech from both speakers. This establishes two-speaker operation on the tested installation, not sample-accurate acoustic synchronization or larger-group compatibility. No music playback was tested.
 
 Beta12 extends the same fan-out tests to 1, 3, 12 and 96 synthetic destinations, immutable selection snapshots, last-speaker refusal across a larger group, and exactly-once failure notification. Constructor cases reject empty / oversized selections and duplicate or invalid channels. These synthetic sizes are not claims about NVR hardware session capacity.
+
+Beta13 adds offline authenticator access. An isolated, no-network app ID on the physical Android TV passed 33 device assertions with synthetic credentials: actual Keystore encryption / decryption, atomic pattern removal, legacy verifier rejection, persisted counter consumption and replay rejection, shared OTP / recovery throttling, recovery granting replacement without unlocking, interrupted-replacement recovery preservation, secret / recovery rotation and fail-closed ciphertext damage. The production profile was not read, reset or enrolled by this harness. These checks complement JVM reference vectors and QR decoding; they do not establish that the owner's private phone enrollment or every Android TV keyboard has been tested.

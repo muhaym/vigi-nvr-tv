@@ -7,7 +7,11 @@ Upstream: https://code.videolan.org/videolan/libvlcjni
 Binary / POM: https://repo.maven.apache.org/maven2/org/videolan/android/libvlc-all/3.7.7/
 License: LGPL 2.1 or later, subject to the exact native build and its dependencies. See `licenses/LGPL-2.1.txt` and the upstream source / notices. Before public binary distribution provide the exact corresponding native source, configuration and applicable relinking / modification materials. This source preparation does not claim that the binary compliance package is finished.
 
-## Kotlin standard library
+## ZXing core 3.5.3
+
+Artifact: `com.google.zxing:core:3.5.3`, https://github.com/zxing/zxing . Apache 2.0; see `licenses/Apache-2.0.txt`. Copyright 2007 ZXing authors. Used only to generate enrollment QR codes locally. No QR service or camera-scanning permission is used.
+
+## Kotlin standard library (LibVLC dependency)
 
 Transitive LibVLC dependency. Apache 2.0. Upstream https://github.com/JetBrains/kotlin . Preserve its notices in binary distributions.
 

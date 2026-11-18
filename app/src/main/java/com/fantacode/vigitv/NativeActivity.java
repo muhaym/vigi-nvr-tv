@@ -234,7 +234,7 @@ public final class NativeActivity extends Activity {
                   ? "Overview settings · review needed"
                   : "Overview settings",
               "Lock now",
-              "Change pattern",
+              "App access · authenticator",
               "Check native recorder connection",
               "Refresh camera list",
               "PA announcements"
