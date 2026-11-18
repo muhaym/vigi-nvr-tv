@@ -1,5 +1,12 @@
 # Changes
 
+## 0.9.0-beta13
+
+- Add offline six-digit authenticator access with local QR enrollment and a private recovery code; no account service or hosted page is required.
+- Keep existing patterns until enrollment is verified and saved, then remove the pattern fallback. Fresh installations start with authenticator setup.
+- Reject consumed time windows, share escalating delays across code and recovery attempts, and preserve recovery during interrupted replacement setup.
+- Protect enrollment / recovery material with Keystore encryption or keyed verification, screenshot blocking and background cleanup. Add standards-vector, recovery and QR round-trip tests.
+
 ## 0.9.0-beta12
 
 - Extend PA to all cameras or a chosen speaker subset, with saved selections and camera-group shortcuts.

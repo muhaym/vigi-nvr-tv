@@ -38,7 +38,7 @@ flowchart LR
 
 ## Lifecycle and physical controls
 
-- `AppLock` / `PatternSecret`: private salted pattern derivation, attempt delay and viewing lock. `PermissionSession` permits only a bounded return from an app-requested system permission prompt.
+- `AppLock` owns the in-memory viewing grant and background relocking. `AuthenticatorActivity` handles local enrollment, masked remote entry and recovery; `TotpLock` owns Keystore-backed encryption, atomic migration / counter consumption and shared attempt persistence. Pure `Totp`, `OtpAttempts` and `RecoveryCode` implement standards-compatible verification, throttling and normalization. `EnrollmentQr` generates the setup image offline. `LockActivity` / `PatternSecret` retain existing pattern access only until enrollment completes. `PermissionSession` permits only a bounded return from an app-requested system permission prompt.
 - `TalkController` / `UsbMicSource`: explicit user start, USB-only input, route checks, foreground authorisation and cancellation. Opening a panel never captures audio.
 - `OpticalZoomController`: finite lens pulses followed by stop retries; arrow navigation does not move a lens.
 - `ManualAlarmRun` / `AlarmController` / `AlarmSafety`: captured target, one start attempt, ten-second deadline, cancellation / stop retries and persistent unconfirmed-stop state. A stopped process cannot guarantee delivery of Stop; that limitation is surfaced in the UI and security documentation.
